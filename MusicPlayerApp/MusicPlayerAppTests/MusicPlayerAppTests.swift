@@ -10,8 +10,10 @@ import Testing
 
 struct MusicPlayerAppTests {
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+    @MainActor
+    @Test func baselineScope() async throws {
+        #expect(ChallengeScope.appName == "MusicPlayer")
+        #expect(ChallengeScope.supportsDedicatedIPadExperience == false)
     }
 
 }

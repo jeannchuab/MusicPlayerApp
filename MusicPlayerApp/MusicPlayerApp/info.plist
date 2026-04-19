@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>UIAppFonts</key>
+    <array>
+        <string>ArticulatCF-Bold.otf</string>
+        <string>ArticulatCF-BoldOblique.otf</string>
+        <string>ArticulatCF-DemiBold.otf</string>
+        <string>ArticulatCF-DemiBoldOblique.otf</string>
+        <string>ArticulatCF-ExtraBold.otf</string>
+        <string>ArticulatCF-ExtraBoldOblique.otf</string>
+        <string>ArticulatCF-ExtraLight.otf</string>
+        <string>ArticulatCF-ExtraLightOblique.otf</string>
+        <string>ArticulatCF-Heavy.otf</string>
+        <string>ArticulatCF-HeavyOblique.otf</string>
+        <string>ArticulatCF-Light.otf</string>
+        <string>ArticulatCF-LightOblique.otf</string>
+        <string>ArticulatCF-Medium.otf</string>
+        <string>ArticulatCF-MediumOblique.otf</string>
+        <string>ArticulatCF-Normal.otf</string>
+        <string>ArticulatCF-NormalOblique.otf</string>
+        <string>ArticulatCF-Regular.otf</string>
+        <string>ArticulatCF-RegularOblique.otf</string>
+        <string>ArticulatCF-Thin.otf</string>
+        <string>ArticulatCF-ThinOblique.otf</string>
+    </array>
+</dict>
+</plist>

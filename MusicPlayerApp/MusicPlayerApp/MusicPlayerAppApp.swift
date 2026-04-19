@@ -10,23 +10,18 @@ import SwiftData
 
 @main
 struct MusicPlayerAppApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    private let dependencies = AppDependencies.live
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    init() {
+        FontRegistrar.registerFonts()
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .environment(\.appDependencies, dependencies)
+                .modelContainer(dependencies.modelContainer)
+                .font(.app(15))
         }
-        .modelContainer(sharedModelContainer)
     }
 }
