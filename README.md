@@ -1,6 +1,6 @@
 # MusicPlayerApp
 
-MusicPlayerApp is an iPhone-focused SwiftUI implementation for the Music AI iOS code challenge.
+MusicPlayerApp is an iPhone-focused SwiftUI implementation
 
 ## Challenge Scope
 
