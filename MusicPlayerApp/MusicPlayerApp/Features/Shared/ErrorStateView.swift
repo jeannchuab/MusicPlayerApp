@@ -1,9 +1,19 @@
 import SwiftUI
 
+/// Presents a reusable error state with a retry action.
 struct ErrorStateView: View {
+
+    // MARK: - Properties
+
+    /// The user-facing error message displayed below the title.
     let message: String
+
+    /// The action triggered when the retry button is tapped.
     let retry: () -> Void
 
+    // MARK: - Body
+
+    /// The error UI containing an icon, explanatory text, and retry button.
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "wifi.exclamationmark")

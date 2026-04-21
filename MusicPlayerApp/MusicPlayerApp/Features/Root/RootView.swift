@@ -1,9 +1,19 @@
 import SwiftUI
 
+/// Coordinates the initial splash presentation and transitions into the home screen.
 struct RootView: View {
+
+    // MARK: - Properties
+
+    /// The shared app dependencies injected from the app entry point.
     @Environment(\.appDependencies) private var dependencies
+
+    /// Tracks whether the splash screen should still be visible.
     @State private var showsSplash = true
 
+    // MARK: - Body
+
+    /// The root layout that fades from the splash screen into the home screen.
     var body: some View {
         ZStack {
             HomeView(
@@ -31,6 +41,9 @@ struct RootView: View {
         }
     }
 
+    // MARK: - Helpers
+
+    /// Indicates whether the splash should currently cover the home screen.
     private var shouldShowSplash: Bool {
         showsSplash && !dependencies.launchConfiguration.skipsSplash
     }

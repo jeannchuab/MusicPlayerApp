@@ -1,6 +1,11 @@
 import SwiftUI
 
+/// Centralizes the bundled Articulat CF font family used across the app.
 enum AppFont {
+
+    // MARK: - Supporting Types
+
+    /// The supported Articulat CF font weights available in the app bundle.
     enum Weight: Int {
         case light300 = 300
         case regular400 = 400
@@ -10,6 +15,14 @@ enum AppFont {
         case heavy800 = 800
     }
 
+    // MARK: - Factory
+
+    /// Creates a SwiftUI `Font` using the bundled Articulat CF family.
+    ///
+    /// - Parameters:
+    ///   - size: The point size for the font.
+    ///   - weight: The Articulat CF weight to load.
+    ///   - textStyle: The text style used for Dynamic Type scaling.
     static func font(
         size: CGFloat,
         weight: Weight = .regular400,
@@ -18,8 +31,11 @@ enum AppFont {
         Font.custom(postScriptName(for: weight), size: size, relativeTo: textStyle)
     }
 
-    //TODO: Add docs on all files
-    
+    // MARK: - Helpers
+
+    /// Returns the PostScript font name associated with the provided weight.
+    ///
+    /// - Parameter weight: The Articulat CF weight to resolve.
     private static func postScriptName(for weight: Weight) -> String {
         switch weight {
         case .light300:
@@ -38,7 +54,14 @@ enum AppFont {
     }
 }
 
+/// Convenience helpers for creating app-branded fonts from `Font`.
 extension Font {
+    /// Creates a SwiftUI `Font` using the bundled Articulat CF family.
+    ///
+    /// - Parameters:
+    ///   - size: The point size for the font.
+    ///   - weight: The Articulat CF weight to load.
+    ///   - textStyle: The text style used for Dynamic Type scaling.
     static func app(
         _ size: CGFloat,
         weight: AppFont.Weight = .regular400,
