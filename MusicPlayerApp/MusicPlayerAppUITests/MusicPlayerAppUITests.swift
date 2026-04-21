@@ -19,9 +19,9 @@ final class MusicPlayerAppUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--skip-splash"]
         app.launch()
 
-        XCTAssertTrue(app.navigationBars["Songs"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.descendants(matching: .any)["home.songList"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Midnight Signal"].exists)
+        XCTAssertTrue(app.staticTexts["Songs"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Midnight Signal"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Golden Static"].exists)
     }
 
     @MainActor

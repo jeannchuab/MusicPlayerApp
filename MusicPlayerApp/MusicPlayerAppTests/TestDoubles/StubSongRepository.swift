@@ -42,7 +42,8 @@ extension Song {
     static func stub(
         id: Int = 1,
         title: String = "Demo Song",
-        previewURL: URL? = URL(string: "https://example.com/preview.m4a")
+        previewURL: URL? = URL(string: "https://example.com/preview.m4a"),
+        durationMilliseconds: Int? = 180_000
     ) -> Song {
         Song(
             id: id,
@@ -52,7 +53,7 @@ extension Song {
             albumTitle: "Demo Album",
             artworkURL: URL(string: "https://example.com/artwork.jpg"),
             previewURL: previewURL,
-            durationMilliseconds: 180_000,
+            durationMilliseconds: durationMilliseconds,
             genreName: "Pop",
             releaseDate: nil,
             trackNumber: 1,

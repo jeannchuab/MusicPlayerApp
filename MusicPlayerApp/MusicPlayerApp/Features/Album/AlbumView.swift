@@ -20,6 +20,8 @@ struct AlbumView: View {
         self.onSongPlayed = onSongPlayed
     }
 
+    //TODO: Improvement: Once we click on a song here we should get back to the player view with the new music loaded.
+    
     var body: some View {
         ZStack {
             AppTheme.background

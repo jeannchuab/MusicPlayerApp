@@ -27,77 +27,77 @@ struct PlayerView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AppTheme.background
-                    .ignoresSafeArea()
+        ZStack {
+            AppTheme.background
+                .ignoresSafeArea()
 
-                VStack {
-                    Spacer(minLength: 100)
+            VStack {
+                Spacer(minLength: 100)
 
-                    artwork
-                    
-                    Spacer(minLength: 116)
+                artwork
 
-                    songDetails
+                Spacer(minLength: 116)
 
-                    playbackTimeline
+                songDetails
 
-                    controls
+                playbackTimeline
 
-                    if let errorMessage = viewModel.errorMessage {
-                        Text(errorMessage)
-                            .font(.app(13, relativeTo: .footnote))
-                            .foregroundStyle(AppTheme.secondaryText)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
+                controls
 
-                    Spacer(minLength: 24)
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .font(.app(13, relativeTo: .footnote))
+                        .foregroundStyle(AppTheme.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                 }
-                .padding(.horizontal, 24)
 
-                moreOptionsOverlay
+                Spacer(minLength: 24)
             }
-            .navigationTitle("Now Playing")
-            .accessibilityIdentifier("player.screen")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        toggleMoreOptions()
-                    } label: {
-                        Image(systemName: "ellipsis")
-                    }
-                    .foregroundStyle(AppTheme.primaryText)
-                    .accessibilityLabel("More options")
+            .padding(.horizontal, 24)
+
+            moreOptionsOverlay
+        }
+        .navigationTitle("Now Playing")
+        .accessibilityIdentifier("player.screen")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    toggleMoreOptions()
+                } label: {
+                    Image(systemName: "ellipsis")
                 }
+                .foregroundStyle(AppTheme.primaryText)
+                .accessibilityLabel("More options")
             }
-            .task {
-                await viewModel.load()
-                onSongPlayed(viewModel.song)
-                await viewModel.startPlaybackProgressUpdates()
-            }
-            .onDisappear {
-                viewModel.pause()
-            }
-            .navigationDestination(item: $albumRoute) { route in
-                AlbumView(
-                    collectionId: route.collectionId,
-                    repository: songRepository,
-                    makeAudioPlaybackService: makeAudioPlaybackService,
-                    onSongPlayed: onSongPlayed
-                )
-            }
+        }
+        .task {
+            await viewModel.load()
+            onSongPlayed(viewModel.song)
+            await viewModel.startPlaybackProgressUpdates()
+        }
+        .onDisappear {
+            viewModel.pause()
+        }
+        .navigationDestination(item: $albumRoute) { route in
+            AlbumView(
+                collectionId: route.collectionId,
+                repository: songRepository,
+                makeAudioPlaybackService: makeAudioPlaybackService,
+                onSongPlayed: onSongPlayed
+            )
         }
     }
 
+    //TODO: Make a component instead
+    
     private var moreOptionsOverlay: some View {
         GeometryReader { proxy in
             let bottomInset = proxy.safeAreaInsets.bottom
             let sheetHeight: CGFloat = 192 + bottomInset
-            let hiddenOffset = sheetHeight + 24
+            let hiddenOffset = sheetHeight + 34
             let sheetOffset = showsMoreOptions ? moreOptionsDragOffset : hiddenOffset
 
             ZStack(alignment: .bottom) {

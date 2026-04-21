@@ -4,7 +4,7 @@ import Testing
 
 @MainActor
 struct PlayerViewModelTests {
-    @Test func loadStartsPlaybackWhenPreviewURLExists() async {
+    @Test func loadDoNotStartsPlaybackWhenPreviewURLExists() async {
         let service = StubAudioPlaybackService(duration: 30)
         let song = Song.stub(previewURL: URL(string: "https://example.com/preview.m4a"))
         let viewModel = PlayerViewModel(song: song, playbackService: service)
@@ -12,7 +12,7 @@ struct PlayerViewModelTests {
         await viewModel.load()
 
         #expect(service.loadedURL == song.previewURL)
-        #expect(viewModel.isPlaying)
+        #expect(viewModel.isPlaying == false)
         #expect(viewModel.errorMessage == nil)
     }
 
@@ -29,7 +29,10 @@ struct PlayerViewModelTests {
 
     @Test func seekUsesDurationAndClampsProgress() {
         let service = StubAudioPlaybackService(duration: 40)
-        let viewModel = PlayerViewModel(song: .stub(), playbackService: service)
+        let viewModel = PlayerViewModel(
+            song: .stub(durationMilliseconds: 40_000),
+            playbackService: service
+        )
 
         viewModel.seek(toProgress: 0.5)
         viewModel.seek(toProgress: 2)

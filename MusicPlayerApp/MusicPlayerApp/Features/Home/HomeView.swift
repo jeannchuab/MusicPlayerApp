@@ -16,6 +16,10 @@ struct HomeView: View {
         self.repository = repository
     }
 
+    //TODO: Looks like the pagination is repeating
+    //TODO: Fonts are not being loaded
+    //TODO: The time is not appearing on the timeline compoment
+    
     var body: some View {
         NavigationStack {
             ZStack {
