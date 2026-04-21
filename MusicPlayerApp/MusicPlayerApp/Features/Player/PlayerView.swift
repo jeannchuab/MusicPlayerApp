@@ -142,19 +142,7 @@ struct PlayerView: View {
         CustomSheetView(isPresented: $showsMoreOptions, contentHeight: 208) {
             SongOptionsSheet(
                 song: viewModel.song,
-                onGoToAlbum: {
-                    dismissMoreOptions()
-                    if let albumId = viewModel.song.albumId {
-                        albumRoute = AlbumRoute(collectionId: albumId)
-                    }
-                },
-                onShare: {
-                    dismissMoreOptions()
-                    guard let trackViewURL = viewModel.song.trackViewURL else { return }
-                    DispatchQueue.main.async {
-                        shareURL = trackViewURL
-                    }
-                }
+                options: playerOptions
             )
             .accessibilityIdentifier("player.moreOptionsPanel")
         }
@@ -331,6 +319,35 @@ struct PlayerView: View {
                 }
             }
         )
+    }
+
+    /// The actions presented in the player more-options sheet.
+    private var playerOptions: [SongOptionsSheet.Option] {
+        [
+            SongOptionsSheet.Option(
+                id: "view-album",
+                title: "View album",
+                icon: .asset("ic-setlist"),
+                isEnabled: viewModel.song.albumId != nil
+            ) {
+                dismissMoreOptions()
+                if let albumId = viewModel.song.albumId {
+                    albumRoute = AlbumRoute(collectionId: albumId)
+                }
+            },
+            SongOptionsSheet.Option(
+                id: "share-song",
+                title: "Share this song",
+                icon: .system("square.and.arrow.up"),
+                isEnabled: viewModel.song.trackViewURL != nil
+            ) {
+                dismissMoreOptions()
+                guard let trackViewURL = viewModel.song.trackViewURL else { return }
+                DispatchQueue.main.async {
+                    shareURL = trackViewURL
+                }
+            }
+        ]
     }
 }
 

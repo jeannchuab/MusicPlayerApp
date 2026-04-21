@@ -226,18 +226,7 @@ struct HomeView: View {
             if let menuSong {
                 SongOptionsSheet(
                     song: menuSong,
-                    onGoToAlbum: {
-                        showsRowOptions = false
-                        guard let albumId = menuSong.albumId else { return }
-                        albumRoute = AlbumRoute(collectionId: albumId)
-                    },
-                    onShare: {
-                        showsRowOptions = false
-                        guard let trackViewURL = menuSong.trackViewURL else { return }
-                        DispatchQueue.main.async {
-                            shareURL = trackViewURL
-                        }
-                    }
+                    options: rowOptions(for: menuSong)
                 )
             }
         }
@@ -266,6 +255,34 @@ struct HomeView: View {
                 }
             }
         )
+    }
+
+    /// Builds the actions presented in the song row options sheet for the selected song.
+    private func rowOptions(for song: Song) -> [SongOptionsSheet.Option] {
+        [
+            SongOptionsSheet.Option(
+                id: "view-album",
+                title: "View album",
+                icon: .asset("ic-setlist"),
+                isEnabled: song.albumId != nil
+            ) {
+                showsRowOptions = false
+                guard let albumId = song.albumId else { return }
+                albumRoute = AlbumRoute(collectionId: albumId)
+            },
+            SongOptionsSheet.Option(
+                id: "share-song",
+                title: "Share this song",
+                icon: .system("square.and.arrow.up"),
+                isEnabled: song.trackViewURL != nil
+            ) {
+                showsRowOptions = false
+                guard let trackViewURL = song.trackViewURL else { return }
+                DispatchQueue.main.async {
+                    shareURL = trackViewURL
+                }
+            }
+        ]
     }
 }
 

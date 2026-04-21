@@ -3,16 +3,71 @@ import SwiftUI
 /// A reusable actions sheet for song-specific actions such as viewing the album or sharing the track.
 struct SongOptionsSheet: View {
 
+    // MARK: - Supporting Types
+
+    /// A single action rendered inside ``SongOptionsSheet``.
+    struct Option: Identifiable {
+
+        // MARK: - Supporting Types
+
+        /// The icon source used when rendering an option label.
+        enum Icon {
+            /// Uses an image asset bundled with the app.
+            case asset(String)
+
+            /// Uses an SF Symbol name.
+            case system(String)
+        }
+
+        // MARK: - Properties
+
+        /// The stable identifier for the option row.
+        let id: String
+
+        /// The user-facing title shown in the sheet.
+        let title: String
+
+        /// The icon rendered alongside the title.
+        let icon: Icon
+
+        /// Indicates whether the action can currently be invoked.
+        let isEnabled: Bool
+
+        /// The action triggered when the option is tapped.
+        let action: () -> Void
+
+        // MARK: - Initialization
+
+        /// Creates a new song options sheet action.
+        ///
+        /// - Parameters:
+        ///   - id: The stable identifier for the option row.
+        ///   - title: The user-facing title shown in the sheet.
+        ///   - icon: The icon rendered alongside the title.
+        ///   - isEnabled: Indicates whether the option should be tappable.
+        ///   - action: The action triggered when the option is tapped.
+        init(
+            id: String,
+            title: String,
+            icon: Icon,
+            isEnabled: Bool = true,
+            action: @escaping () -> Void
+        ) {
+            self.id = id
+            self.title = title
+            self.icon = icon
+            self.isEnabled = isEnabled
+            self.action = action
+        }
+    }
+
     // MARK: - Properties
 
     /// The song currently associated with the sheet.
     let song: Song
 
-    /// Called when the album action is selected.
-    let onGoToAlbum: () -> Void
-
-    /// Called when the share action is selected.
-    let onShare: () -> Void
+    /// The list of actions rendered below the song metadata.
+    let options: [Option]
 
     // MARK: - Initialization
 
@@ -20,16 +75,13 @@ struct SongOptionsSheet: View {
     ///
     /// - Parameters:
     ///   - song: The song whose actions are presented in the sheet.
-    ///   - onGoToAlbum: The action triggered when the view album button is tapped.
-    ///   - onShare: The action triggered when the share button is tapped.
+    ///   - options: The actions rendered below the song metadata.
     init(
         song: Song,
-        onGoToAlbum: @escaping () -> Void,
-        onShare: @escaping () -> Void
+        options: [Option]
     ) {
         self.song = song
-        self.onGoToAlbum = onGoToAlbum
-        self.onShare = onShare
+        self.options = options
     }
 
     // MARK: - Body
@@ -56,19 +108,14 @@ struct SongOptionsSheet: View {
                     .lineLimit(2)
             }
 
-            Button(action: onGoToAlbum) {
-                option(title: "View album", image: "ic-setlist")
+            ForEach(options) { option in
+                Button(action: option.action) {
+                    optionRow(option)
+                }
+                .buttonStyle(.plain)
+                .disabled(!option.isEnabled)
+                .opacity(option.isEnabled ? 1 : 0.45)
             }
-            .buttonStyle(.plain)
-            .disabled(song.albumId == nil)
-            .opacity(song.albumId == nil ? 0.45 : 1)
-
-            Button(action: onShare) {
-                option(title: "Share this song", systemImage: "square.and.arrow.up")
-            }
-            .buttonStyle(.plain)
-            .disabled(song.trackViewURL == nil)
-            .opacity(song.trackViewURL == nil ? 0.45 : 1)
 
             Spacer(minLength: 0)
         }
@@ -77,21 +124,22 @@ struct SongOptionsSheet: View {
 
     // MARK: - Helpers
 
-    /// Builds a leading-aligned row option using an asset image.
-    private func option(title: String, image: String) -> some View {
-        Label(title, image: image)
-            .font(.app(17, weight: .semibold600))
-            .foregroundStyle(AppTheme.primaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 8)
-    }
-
-    /// Builds a leading-aligned row option using an SF Symbol.
-    private func option(title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.app(17, weight: .semibold600))
-            .foregroundStyle(AppTheme.primaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 8)
+    /// Builds a leading-aligned row option from a typed ``Option`` model.
+    @ViewBuilder
+    private func optionRow(_ option: Option) -> some View {
+        switch option.icon {
+        case .asset(let imageName):
+            Label(option.title, image: imageName)
+                .font(.app(17, weight: .semibold600))
+                .foregroundStyle(AppTheme.primaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
+        case .system(let systemImage):
+            Label(option.title, systemImage: systemImage)
+                .font(.app(17, weight: .semibold600))
+                .foregroundStyle(AppTheme.primaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
+        }
     }
 }
