@@ -22,6 +22,9 @@ struct HomeView: View {
     /// The track URL currently being shared from the row options sheet.
     @State private var shareURL: URL?
 
+    /// Drives navigation from the row options sheet into the selected album.
+    @State private var albumRoute: AlbumRoute?
+
     /// Tracks whether the search text field is focused.
     @FocusState private var isSearchFocused: Bool
 
@@ -74,6 +77,16 @@ struct HomeView: View {
                     playlist: viewModel.visibleSongs,
                     songRepository: repository,
                     playbackService: makeAudioPlaybackService(),
+                    makeAudioPlaybackService: makeAudioPlaybackService,
+                    onSongPlayed: { song in
+                        viewModel.recordPlayback(for: song)
+                    }
+                )
+            }
+            .navigationDestination(item: $albumRoute) { route in
+                AlbumView(
+                    collectionId: route.collectionId,
+                    repository: repository,
                     makeAudioPlaybackService: makeAudioPlaybackService,
                     onSongPlayed: { song in
                         viewModel.recordPlayback(for: song)
@@ -207,17 +220,25 @@ struct HomeView: View {
 
     // MARK: - Helpers
 
+    /// The custom row options sheet that supports album navigation and track sharing.
     private var rowOptionsOverlay: some View {
-        CustomSheetView(isPresented: $showsRowOptions, contentHeight: 160) {
+        CustomSheetView(isPresented: $showsRowOptions, contentHeight: 208) {
             if let menuSong {
-                //TODO: Maybe the share works inside SongRowOptionsSheet?
-                SongRowOptionsSheet(song: menuSong, isShareEnabled: menuSong.trackViewURL != nil) {
-                    showsRowOptions = false
-                    guard let trackViewURL = menuSong.trackViewURL else { return }
-                    DispatchQueue.main.async {
-                        shareURL = trackViewURL
+                SongOptionsSheet(
+                    song: menuSong,
+                    onGoToAlbum: {
+                        showsRowOptions = false
+                        guard let albumId = menuSong.albumId else { return }
+                        albumRoute = AlbumRoute(collectionId: albumId)
+                    },
+                    onShare: {
+                        showsRowOptions = false
+                        guard let trackViewURL = menuSong.trackViewURL else { return }
+                        DispatchQueue.main.async {
+                            shareURL = trackViewURL
+                        }
                     }
-                }
+                )
             }
         }
     }
@@ -245,5 +266,21 @@ struct HomeView: View {
                 }
             }
         )
+    }
+}
+
+// MARK: - Supporting Types
+
+/// Navigation model used to push an album destination from the home screen.
+private struct AlbumRoute: Identifiable, Hashable {
+
+    // MARK: - Properties
+
+    /// Album identifier used to load the destination content.
+    let collectionId: Int
+
+    /// Stable identity for use with `navigationDestination(item:)`.
+    var id: Int {
+        collectionId
     }
 }

@@ -18,6 +18,9 @@ struct PlayerView: View {
     /// Drives navigation from the player into the selected album.
     @State private var albumRoute: AlbumRoute?
 
+    /// The track URL currently being shared from the player options sheet.
+    @State private var shareURL: URL?
+
     /// Repository used to load album details from the player flow.
     private let songRepository: any SongRepository
 
@@ -124,6 +127,11 @@ struct PlayerView: View {
                 onSongPlayed: onSongPlayed
             )
         }
+        .sheet(isPresented: isShowingShareSheet) {
+            if let shareURL {
+                SystemShareSheet(items: [shareURL])
+            }
+        }
     }
 
     // MARK: - Overlay
@@ -131,13 +139,23 @@ struct PlayerView: View {
     /// Keeps the player-specific call site in `PlayerView` while delegating the
     /// sheet presentation and dismissal behavior to `CustomSheetView`.
     private var moreOptionsOverlay: some View {
-        CustomSheetView(isPresented: $showsMoreOptions, contentHeight: 160) {
-            PlayerMoreOptionsSheet(song: viewModel.song) {
-                dismissMoreOptions()
-                if let albumId = viewModel.song.albumId {
-                    albumRoute = AlbumRoute(collectionId: albumId)
+        CustomSheetView(isPresented: $showsMoreOptions, contentHeight: 208) {
+            SongOptionsSheet(
+                song: viewModel.song,
+                onGoToAlbum: {
+                    dismissMoreOptions()
+                    if let albumId = viewModel.song.albumId {
+                        albumRoute = AlbumRoute(collectionId: albumId)
+                    }
+                },
+                onShare: {
+                    dismissMoreOptions()
+                    guard let trackViewURL = viewModel.song.trackViewURL else { return }
+                    DispatchQueue.main.async {
+                        shareURL = trackViewURL
+                    }
                 }
-            }
+            )
             .accessibilityIdentifier("player.moreOptionsPanel")
         }
     }
@@ -301,6 +319,18 @@ struct PlayerView: View {
     /// Toggles the visibility of the custom more-options sheet.
     private func toggleMoreOptions() {
         showsMoreOptions.toggle()
+    }
+
+    /// A binding that drives the native share sheet from the player screen.
+    private var isShowingShareSheet: Binding<Bool> {
+        Binding(
+            get: { shareURL != nil },
+            set: { isPresented in
+                if !isPresented {
+                    shareURL = nil
+                }
+            }
+        )
     }
 }
 
