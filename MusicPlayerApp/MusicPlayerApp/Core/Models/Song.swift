@@ -24,6 +24,9 @@ struct Song: Identifiable, Sendable, Hashable {
     /// A URL to a 30-second audio preview of the track, if available.
     let previewURL: URL?
 
+    /// A URL to the track page on the iTunes Store, if available.
+    let trackViewURL: URL?
+
     /// The track duration in milliseconds as returned by the API.
     let durationMilliseconds: Int?
 
@@ -38,8 +41,6 @@ struct Song: Identifiable, Sendable, Hashable {
 
     /// The total number of tracks in the album this track belongs to.
     let trackCount: Int?
-
-    //TODO: Add the trackViewUrl to share the music
 
     /// The track duration converted to seconds, or `nil` if ``durationMilliseconds`` is not set.
     var durationSeconds: TimeInterval? {

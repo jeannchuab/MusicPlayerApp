@@ -1,11 +1,31 @@
 import SwiftUI
 
+/// Displays album metadata and its tracks, and presents the player for the selected song.
 struct AlbumView: View {
+
+    // MARK: - Properties
+
+    /// The view model that loads and exposes album state for the screen.
     @StateObject private var viewModel: AlbumViewModel
+
+    /// Repository forwarded to the player for follow-up album and song interactions.
     private let repository: any SongRepository
+
+    /// Factory used to provide a fresh playback service to each presented player.
     private let makeAudioPlaybackService: @MainActor () -> any AudioPlaybackService
+
+    /// Callback invoked whenever playback starts from this album flow.
     private let onSongPlayed: (Song) -> Void
 
+    // MARK: - Initialization
+
+    /// Creates a new album screen for the provided collection identifier.
+    ///
+    /// - Parameters:
+    ///   - collectionId: The iTunes collection identifier used to load the album.
+    ///   - repository: The repository used to fetch album data and support downstream player flows.
+    ///   - makeAudioPlaybackService: A factory that creates a fresh playback service for each presented player.
+    ///   - onSongPlayed: A callback invoked whenever playback starts from the album flow.
     init(
         collectionId: Int,
         repository: any SongRepository,
@@ -19,7 +39,9 @@ struct AlbumView: View {
         self.makeAudioPlaybackService = makeAudioPlaybackService
         self.onSongPlayed = onSongPlayed
     }
-    
+
+    // MARK: - Body
+
     var body: some View {
         ZStack {
             AppTheme.background
@@ -47,6 +69,8 @@ struct AlbumView: View {
         }
     }
 
+    // MARK: - Subviews
+
     @ViewBuilder
     private var content: some View {
         switch viewModel.state {
@@ -71,6 +95,7 @@ struct AlbumView: View {
         }
     }
 
+    /// Builds the scrollable album details and song list.
     private func albumList(_ album: Album) -> some View {
         List {
             Section {
@@ -116,12 +141,9 @@ struct AlbumView: View {
 
             Section {
                 ForEach(album.songs) { song in
-                    Button {
+                    SongRowView(song: song) {
                         viewModel.select(song)
-                    } label: {
-                        SongRowView(song: song)
                     }
-                    .buttonStyle(.plain)
                     .listRowBackground(AppTheme.background)
                     .listRowSeparatorTint(Color.white.opacity(0.08))
                 }
@@ -134,6 +156,9 @@ struct AlbumView: View {
         }
     }
 
+    // MARK: - Helpers
+
+    /// Bridges the selected song from the view model into sheet presentation state.
     private var selectedSongBinding: Binding<Song?> {
         Binding(
             get: { viewModel.selectedSong },
@@ -145,6 +170,7 @@ struct AlbumView: View {
         )
     }
 
+    /// Returns the current album tracks so the player can navigate within the album.
     private var songsForSelectedSong: [Song] {
         guard case .loaded(let album) = viewModel.state else { return [] }
         return album.songs

@@ -1,15 +1,47 @@
 import SwiftUI
 
+/// Presents the now-playing experience for a selected song, including playback
+/// controls, timeline scrubbing, and navigation to the album screen.
 struct PlayerView: View {
+
+    // MARK: - Properties
+
+    /// Dismisses the player when it is presented inside a navigation stack.
     @Environment(\.dismiss) private var dismiss
+
+    /// Owns the playback state for the current song and playlist context.
     @StateObject private var viewModel: PlayerViewModel
+
+    /// Controls the visibility of the custom more-options sheet.
     @State private var showsMoreOptions = false
-    @State private var moreOptionsDragOffset: CGFloat = 0
+
+    /// Drives navigation from the player into the selected album.
     @State private var albumRoute: AlbumRoute?
+
+    /// Repository used to load album details from the player flow.
     private let songRepository: any SongRepository
+
+    /// Factory for creating playback services when child screens need one.
     private let makeAudioPlaybackService: @MainActor () -> any AudioPlaybackService
+
+    /// Callback used to notify parent flows when playback should affect
+    /// recently played state or visible song ordering.
     private let onSongPlayed: (Song) -> Void
 
+    // MARK: - Initialization
+
+    /// Creates the player for a selected song and the playlist context it
+    /// belongs to.
+    ///
+    /// - Parameters:
+    ///   - song: The song that should be loaded when the player appears.
+    ///   - playlist: The ordered songs used for previous and next navigation.
+    ///   - songRepository: Repository used for album navigation from the player.
+    ///   - playbackService: Service responsible for audio playback operations.
+    ///   - makeAudioPlaybackService: Factory used when child flows need a fresh
+    ///     playback service instance.
+    ///   - onSongPlayed: Callback invoked when playback should update parent
+    ///     state, such as recently played songs.
     init(
         song: Song,
         playlist: [Song] = [],
@@ -25,7 +57,10 @@ struct PlayerView: View {
         self.makeAudioPlaybackService = makeAudioPlaybackService
         self.onSongPlayed = onSongPlayed
     }
-    
+
+    // MARK: - View Body
+
+    /// The full player screen layout, including artwork, controls, and album navigation.
     var body: some View {
         ZStack {
             AppTheme.background
@@ -91,55 +126,25 @@ struct PlayerView: View {
         }
     }
 
-    //TODO: Make a component instead
-    
+    // MARK: - Overlay
+
+    /// Keeps the player-specific call site in `PlayerView` while delegating the
+    /// sheet presentation and dismissal behavior to `CustomSheetView`.
     private var moreOptionsOverlay: some View {
-        GeometryReader { proxy in
-            let bottomInset = proxy.safeAreaInsets.bottom
-            let sheetHeight: CGFloat = 192 + bottomInset
-            let hiddenOffset = sheetHeight + 34
-            let sheetOffset = showsMoreOptions ? moreOptionsDragOffset : hiddenOffset
-
-            ZStack(alignment: .bottom) {
-                Color.black.opacity(0.18)
-                    .opacity(showsMoreOptions ? 1 : 0)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        dismissMoreOptions()
-                    }
-                    .allowsHitTesting(showsMoreOptions)
-
-                PlayerMoreOptionsSheet(song: viewModel.song) {
-                    dismissMoreOptions()
-                    if let albumId = viewModel.song.albumId {
-                        albumRoute = AlbumRoute(collectionId: albumId)
-                    }
+        CustomSheetView(isPresented: $showsMoreOptions, contentHeight: 160) {
+            PlayerMoreOptionsSheet(song: viewModel.song) {
+                dismissMoreOptions()
+                if let albumId = viewModel.song.albumId {
+                    albumRoute = AlbumRoute(collectionId: albumId)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: sheetHeight)
-                .padding(.bottom, bottomInset)
-                .background(Color(red: 0.15, green: 0.15, blue: 0.15).opacity(0.96))
-                .clipShape(
-                    UnevenRoundedRectangle(
-                        topLeadingRadius: 16,
-                        bottomLeadingRadius: 0,
-                        bottomTrailingRadius: 0,
-                        topTrailingRadius: 16,
-                        style: .continuous
-                    )
-                )
-                .offset(y: sheetOffset)
-                .gesture(moreOptionsDismissGesture)
-                .accessibilityIdentifier("player.moreOptionsPanel")
-                .allowsHitTesting(showsMoreOptions)
             }
-            .ignoresSafeArea(edges: .bottom)
+            .accessibilityIdentifier("player.moreOptionsPanel")
         }
-        .allowsHitTesting(showsMoreOptions)
-        .animation(moreOptionsAnimation, value: showsMoreOptions)
-        .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: moreOptionsDragOffset)
     }
 
+    // MARK: - Content Sections
+
+    /// The primary album artwork displayed near the top of the player.
     private var artwork: some View {
         AsyncImage(url: viewModel.song.artworkURL) { phase in
             switch phase {
@@ -161,6 +166,7 @@ struct PlayerView: View {
         .accessibilityHidden(true)
     }
 
+    /// The track title, artist name, and repeat toggle displayed below the artwork.
     private var songDetails: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(viewModel.song.title)
@@ -189,48 +195,62 @@ struct PlayerView: View {
             }
         }
     }
-    
+
+    /// The playback scrubber and elapsed and total time labels.
     private var playbackTimeline: some View {
-        GeometryReader { proxy in
-            let trackWidth = max(proxy.size.width, 1)
-            let progress = min(max(viewModel.progress, 0), 1)
-            let thumbSize: CGFloat = 24
-            let thumbOffset = progress * (trackWidth - thumbSize)
+        VStack(spacing: 8) {
+            GeometryReader { proxy in
+                let trackWidth = max(proxy.size.width, 1)
+                let progress = min(max(viewModel.progress, 0), 1)
+                let thumbSize: CGFloat = 24
+                let thumbOffset = progress * (trackWidth - thumbSize)
 
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color(red: 0.22, green: 0.22, blue: 0.22))
-                    .frame(height: 8)
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color(red: 0.22, green: 0.22, blue: 0.22))
+                        .frame(height: 8)
 
-                Capsule()
-                    .fill(Color(red: 0.72, green: 0.72, blue: 0.72))
-                    .frame(width: thumbOffset + thumbSize / 2, height: 8)
+                    Capsule()
+                        .fill(Color(red: 0.72, green: 0.72, blue: 0.72))
+                        .frame(width: thumbOffset + thumbSize / 2, height: 8)
 
-                Circle()
-                    .fill(AppTheme.primaryText)
-                    .frame(width: thumbSize, height: thumbSize)
-                    .offset(x: thumbOffset)
-                    .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 1)
+                    Circle()
+                        .fill(AppTheme.primaryText)
+                        .frame(width: thumbSize, height: thumbSize)
+                        .offset(x: thumbOffset)
+                        .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 1)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let clampedX = min(max(value.location.x, thumbSize / 2), trackWidth - thumbSize / 2)
+                            let normalized = (clampedX - thumbSize / 2) / max(trackWidth - thumbSize, 1)
+                            viewModel.seek(toProgress: normalized)
+                        }
+                )
+                .accessibilityElement()
+                .accessibilityLabel("Playback position")
+                .accessibilityValue("\(viewModel.currentTimeText) of \(viewModel.durationText)")
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        let clampedX = min(max(value.location.x, thumbSize / 2), trackWidth - thumbSize / 2)
-                        let normalized = (clampedX - thumbSize / 2) / max(trackWidth - thumbSize, 1)
-                        viewModel.seek(toProgress: normalized)
-                    }
-            )
-            .accessibilityElement()
-            .accessibilityLabel("Playback position")
-            .accessibilityValue("\(viewModel.currentTimeText) of \(viewModel.durationText)")
+            .frame(height: 28)
+
+            HStack {
+                Text(viewModel.currentTimeText)
+                Spacer()
+                Text(viewModel.durationText)
+            }
+            .font(.app(13, weight: .medium500, relativeTo: .caption))
+            .foregroundStyle(AppTheme.secondaryText)
+            .monospacedDigit()
         }
-        .frame(height: 28)
         .padding(.horizontal, 4)
         .animation(.linear(duration: 0.12), value: viewModel.progress)
     }
 
+    /// Playback controls update the shared player state and notify the parent
+    /// when a track transition should refresh recently played content.
     private var controls: some View {
         HStack(spacing: 28) {
             Button {
@@ -271,52 +291,46 @@ struct PlayerView: View {
         .accessibilityIdentifier("player.controls")
     }
 
-    private var moreOptionsDismissGesture: some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { value in
-                moreOptionsDragOffset = max(value.translation.height, 0)
-            }
-            .onEnded { value in
-                let shouldDismiss = value.translation.height > 72 || value.predictedEndTranslation.height > 128
+    // MARK: - Actions
 
-                if shouldDismiss {
-                    dismissMoreOptions()
-                } else {
-                    moreOptionsDragOffset = 0
-                }
-            }
-    }
-
+    /// Closes the custom more-options sheet.
     private func dismissMoreOptions() {
-        withAnimation(moreOptionsAnimation) {
-            showsMoreOptions = false
-            moreOptionsDragOffset = 0
-        }
+        showsMoreOptions = false
     }
 
+    /// Toggles the visibility of the custom more-options sheet.
     private func toggleMoreOptions() {
-        withAnimation(moreOptionsAnimation) {
-            showsMoreOptions.toggle()
-            moreOptionsDragOffset = 0
-        }
-    }
-
-    private var moreOptionsAnimation: Animation {
-        .spring(response: 0.36, dampingFraction: 0.92, blendDuration: 0.08)
+        showsMoreOptions.toggle()
     }
 }
 
+// MARK: - Supporting Types
+
+/// Navigation model used to push an album destination from the player.
 private struct AlbumRoute: Identifiable, Hashable {
+
+    // MARK: - Properties
+
+    /// Album identifier used to load the destination content.
     let collectionId: Int
 
+    /// Stable identity for use with `navigationDestination(item:)`.
     var id: Int {
         collectionId
     }
 }
 
+/// Small wrapper for the custom play/pause background asset and icon state.
 private struct PlayPauseButton: View {
+
+    // MARK: - Properties
+
+    /// Controls whether the pause or play glyph is rendered.
     let isPlaying: Bool
 
+    // MARK: - View Body
+
+    /// The circular play or pause control displayed in the center of the player controls.
     var body: some View {
         ZStack {
             Image("PlayPauseBackground")

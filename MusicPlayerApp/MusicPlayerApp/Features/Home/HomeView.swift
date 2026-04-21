@@ -13,6 +13,15 @@ struct HomeView: View {
     /// The view model that owns the search, pagination, and selection state for this screen.
     @StateObject private var viewModel: HomeViewModel
 
+    /// The song whose row menu is currently active.
+    @State private var menuSong: Song?
+
+    /// Controls the visibility of the row options sheet.
+    @State private var showsRowOptions = false
+
+    /// The track URL currently being shared from the row options sheet.
+    @State private var shareURL: URL?
+
     /// Tracks whether the search text field is focused.
     @FocusState private var isSearchFocused: Bool
 
@@ -51,6 +60,8 @@ struct HomeView: View {
 
                     content
                 }
+
+                rowOptionsOverlay
             }
             .toolbar(.hidden, for: .navigationBar)
             .accessibilityIdentifier("home.screen")
@@ -68,6 +79,11 @@ struct HomeView: View {
                         viewModel.recordPlayback(for: song)
                     }
                 )
+            }
+            .sheet(isPresented: isShowingShareSheet) {
+                if let shareURL {
+                    SystemShareSheet(items: [shareURL])
+                }
             }
         }
     }
@@ -153,12 +169,16 @@ struct HomeView: View {
     private func songList(_ songs: [Song]) -> some View {
         List {
             ForEach(songs) { song in
-                Button {
-                    viewModel.select(song)
-                } label: {
-                    SongRowView(song: song)
-                }
-                .buttonStyle(.plain)
+                SongRowView(
+                    song: song,
+                    onTap: {
+                        viewModel.select(song)
+                    },
+                    onTapMenu: {
+                        menuSong = song
+                        showsRowOptions = true
+                    }
+                )
                 .listRowBackground(AppTheme.background)
                 .listRowInsets(EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 16))
                 .listRowSeparator(.hidden)
@@ -187,6 +207,21 @@ struct HomeView: View {
 
     // MARK: - Helpers
 
+    private var rowOptionsOverlay: some View {
+        CustomSheetView(isPresented: $showsRowOptions, contentHeight: 160) {
+            if let menuSong {
+                //TODO: Maybe the share works inside SongRowOptionsSheet?
+                SongRowOptionsSheet(song: menuSong, isShareEnabled: menuSong.trackViewURL != nil) {
+                    showsRowOptions = false
+                    guard let trackViewURL = menuSong.trackViewURL else { return }
+                    DispatchQueue.main.async {
+                        shareURL = trackViewURL
+                    }
+                }
+            }
+        }
+    }
+
     /// A custom binding that bridges ``HomeViewModel/selectedSong`` to a `navigationDestination`.
     ///
     /// Setting this binding to `nil` calls ``HomeViewModel/dismissSelection()`` to clear the selection.
@@ -196,6 +231,17 @@ struct HomeView: View {
             set: { newValue in
                 if newValue == nil {
                     viewModel.dismissSelection()
+                }
+            }
+        )
+    }
+
+    private var isShowingShareSheet: Binding<Bool> {
+        Binding(
+            get: { shareURL != nil },
+            set: { isPresented in
+                if !isPresented {
+                    shareURL = nil
                 }
             }
         )

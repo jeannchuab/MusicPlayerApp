@@ -1,5 +1,6 @@
 import Foundation
 
+/// A deterministic repository used by previews and UI tests to avoid live network dependencies.
 @MainActor
 final class FixtureSongRepository: SongRepository {
     private let songs: [Song] = [
@@ -10,10 +11,12 @@ final class FixtureSongRepository: SongRepository {
     ]
     private var recentSongs: [Song]
 
+    /// Creates the fixture repository with an initial recently played list.
     init() {
         recentSongs = songs
     }
 
+    /// Returns fixture songs filtered by the provided search term.
     func searchSongs(term: String, limit: Int, offset: Int) async throws -> SearchPage {
         let trimmedTerm = term.trimmingCharacters(in: .whitespacesAndNewlines)
         let matchingSongs = songs.filter {
@@ -33,6 +36,7 @@ final class FixtureSongRepository: SongRepository {
         )
     }
 
+    /// Returns a fixture album for the provided collection identifier.
     func lookupAlbum(collectionId: Int) async throws -> Album {
         let albumSongs = songs.filter { $0.albumId == collectionId }
         guard let firstSong = albumSongs.first else {
@@ -54,10 +58,12 @@ final class FixtureSongRepository: SongRepository {
         )
     }
 
+    /// Returns the current in-memory recently played slice.
     func recentlyPlayed(limit: Int) throws -> [Song] {
         Array(recentSongs.prefix(limit))
     }
 
+    /// Moves a song to the front of the in-memory recently played list.
     func addRecentlyPlayed(_ song: Song) throws {
         recentSongs.removeAll { $0.id == song.id }
         recentSongs.insert(song, at: 0)
@@ -80,6 +86,7 @@ private extension Song {
             albumTitle: albumTitle,
             artworkURL: nil,
             previewURL: nil,
+            trackViewURL: URL(string: "https://example.com/tracks/\(id)"),
             durationMilliseconds: 30_000,
             genreName: "Electronic",
             releaseDate: nil,

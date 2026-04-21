@@ -1,15 +1,18 @@
 import Foundation
 
+/// The top-level payload returned by the iTunes Search endpoint for song queries.
 struct ITunesSearchResponseDTO: Decodable, Equatable {
     let resultCount: Int
     let results: [ITunesSongDTO]
 }
 
+/// The top-level payload returned by the iTunes Lookup endpoint for albums.
 struct ITunesLookupResponseDTO: Decodable, Equatable {
     let resultCount: Int
     let results: [ITunesLookupResultDTO]
 }
 
+/// A lookup result wrapper that can represent either album metadata or an individual track.
 enum ITunesLookupResultDTO: Decodable, Equatable {
     case collection(ITunesCollectionDTO)
     case song(ITunesSongDTO)
@@ -34,6 +37,7 @@ enum ITunesLookupResultDTO: Decodable, Equatable {
     }
 }
 
+/// The album metadata returned by iTunes lookup responses.
 struct ITunesCollectionDTO: Decodable, Equatable {
     let collectionId: Int
     let collectionName: String
@@ -41,6 +45,7 @@ struct ITunesCollectionDTO: Decodable, Equatable {
     let artworkUrl100: URL?
 }
 
+/// The track metadata returned by iTunes search and lookup responses.
 struct ITunesSongDTO: Decodable, Equatable {
     let wrapperType: String?
     let kind: String?
@@ -51,6 +56,7 @@ struct ITunesSongDTO: Decodable, Equatable {
     let collectionName: String?
     let artworkUrl100: URL?
     let previewUrl: URL?
+    let trackViewUrl: URL?
     let trackTimeMillis: Int?
     let primaryGenreName: String?
     let releaseDate: String?
