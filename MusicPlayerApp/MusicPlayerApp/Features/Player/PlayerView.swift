@@ -58,7 +58,7 @@ struct PlayerView: View {
 
             moreOptionsOverlay
         }
-        .navigationTitle("Now Playing")
+        .navigationTitle(viewModel.song.albumTitle ?? "Now Playing")
         .accessibilityIdentifier("player.screen")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)

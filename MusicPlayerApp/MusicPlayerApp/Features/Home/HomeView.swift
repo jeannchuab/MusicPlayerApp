@@ -1,12 +1,34 @@
 import SwiftUI
 
+/// The main Home screen that displays a searchable list of songs and navigates to the player on selection.
+///
+/// `HomeView` presents a search field at the top and a vertically scrolling song list below it.
+/// When no search query is active, recently played songs are shown as the initial content.
+/// Tapping a song navigates to ``PlayerView`` via a `navigationDestination`.
+/// Infinite-scroll pagination is handled automatically as the user scrolls to the bottom of the list.
 struct HomeView: View {
+
+    // MARK: - Properties
+
+    /// The view model that owns the search, pagination, and selection state for this screen.
     @StateObject private var viewModel: HomeViewModel
-//    @State private var isSearchActive = false
+
+    /// Tracks whether the search text field is focused.
     @FocusState private var isSearchFocused: Bool
+
+    /// Factory closure that creates a fresh ``AudioPlaybackService`` for each ``PlayerView`` instance.
     private let makeAudioPlaybackService: @MainActor () -> any AudioPlaybackService
+
+    /// The song repository forwarded to child views that need direct repository access.
     private let repository: any SongRepository
 
+    // MARK: - Initialization
+
+    /// Creates a new `HomeView`.
+    ///
+    /// - Parameters:
+    ///   - repository: The song repository used for search, caching, and playback history.
+    ///   - makeAudioPlaybackService: A factory that produces a new ``AudioPlaybackService`` each time a player is presented.
     init(
         repository: any SongRepository,
         makeAudioPlaybackService: @escaping @MainActor () -> any AudioPlaybackService
@@ -16,10 +38,8 @@ struct HomeView: View {
         self.repository = repository
     }
 
-    //TODO: Looks like the pagination is repeating
-    //TODO: Fonts are not being loaded
-    //TODO: The time is not appearing on the timeline compoment
-    
+    // MARK: - Body
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -52,6 +72,9 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Subviews
+
+    /// The top section containing the screen title and search text field.
     @ViewBuilder
     private var header: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -94,6 +117,8 @@ struct HomeView: View {
         }
     }
 
+    /// The main content area, which displays a loading indicator, song list, empty state, or error view
+    /// depending on the current ``HomeViewModel/state``.
     @ViewBuilder
     private var content: some View {
         switch viewModel.state {
@@ -121,31 +146,12 @@ struct HomeView: View {
         }
     }
 
+    /// Builds a scrollable, pull-to-refresh list of songs with infinite-scroll pagination.
+    ///
+    /// - Parameter songs: The songs to display as rows in the list.
+    /// - Returns: A `List` view containing tappable song rows and an optional loading indicator at the bottom.
     private func songList(_ songs: [Song]) -> some View {
         List {
-            
-//            if !viewModel.recentlyPlayed.isEmpty {
-//                Section {
-//                    ScrollView(.horizontal, showsIndicators: false) {
-//                        HStack(spacing: 14) {
-//                            ForEach(viewModel.recentlyPlayed) { song in
-//                                RecentlyPlayedSongView(song: song) {
-//                                    viewModel.select(song)
-//                                }
-//                            }
-//                        }
-//                        .padding(.vertical, 4)
-//                    }
-//                } header: {
-//                    Text("Recently Played")
-//                        .font(.app(17, weight: .semibold600, relativeTo: .headline))
-//                        .foregroundStyle(AppTheme.primaryText)
-//                        .textCase(nil)
-//                }
-//                .listRowBackground(AppTheme.background)
-//                .listRowSeparator(.hidden)
-//            }
-
             ForEach(songs) { song in
                 Button {
                     viewModel.select(song)
@@ -179,6 +185,11 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Helpers
+
+    /// A custom binding that bridges ``HomeViewModel/selectedSong`` to a `navigationDestination`.
+    ///
+    /// Setting this binding to `nil` calls ``HomeViewModel/dismissSelection()`` to clear the selection.
     private var selectedSongBinding: Binding<Song?> {
         Binding(
             get: { viewModel.selectedSong },

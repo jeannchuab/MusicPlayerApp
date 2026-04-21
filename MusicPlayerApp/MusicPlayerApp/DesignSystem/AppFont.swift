@@ -18,6 +18,8 @@ enum AppFont {
         Font.custom(postScriptName(for: weight), size: size, relativeTo: textStyle)
     }
 
+    //TODO: Add docs on all files
+    
     private static func postScriptName(for weight: Weight) -> String {
         switch weight {
         case .light300:

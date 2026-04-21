@@ -85,4 +85,26 @@ struct HomeViewModelTests {
         #expect(viewModel.visibleSongs == [nextSong, firstSong])
         #expect(viewModel.state == .loaded([nextSong, firstSong]))
     }
+
+    @Test func loadMoreRevealsNextSliceWithoutRequestingDuplicatePage() async {
+        let songs = (1...60).map { Song.stub(id: $0, title: "Song \($0)") }
+        let page = SearchPage(query: "demo", offset: 0, limit: 200, resultCount: songs.count, songs: songs)
+        let repository = StubSongRepository(searchResult: .success(page))
+        let viewModel = HomeViewModel(repository: repository, initialSearchText: "demo")
+
+        await viewModel.search()
+        #expect(viewModel.visibleSongs.count == 25)
+        #expect(repository.searchRequests.count == 1)
+        #expect(repository.searchRequests.first?.offset == 0)
+
+        await viewModel.loadMoreIfNeeded(currentSong: songs[24])
+        #expect(viewModel.visibleSongs.count == 50)
+        #expect(viewModel.visibleSongs[25].id == songs[25].id)
+        #expect(repository.searchRequests.count == 1)
+
+        await viewModel.loadMoreIfNeeded(currentSong: songs[49])
+        #expect(viewModel.visibleSongs.count == 60)
+        #expect(viewModel.visibleSongs.last?.id == songs.last?.id)
+        #expect(repository.searchRequests.count == 1)
+    }
 }
