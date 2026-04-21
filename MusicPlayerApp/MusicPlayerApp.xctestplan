@@ -1,0 +1,38 @@
+{
+  "configurations" : [
+    {
+      "id" : "1801AE1B-4A74-4ADD-BE92-F11773942268",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:MusicPlayerApp.xcodeproj",
+      "identifier" : "9ADE8AE62F9516CC00FBCEA8",
+      "name" : "MusicPlayerApp"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:MusicPlayerApp.xcodeproj",
+        "identifier" : "9ADE8AF52F9516CE00FBCEA8",
+        "name" : "MusicPlayerAppTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:MusicPlayerApp.xcodeproj",
+        "identifier" : "9ADE8AFF2F9516CE00FBCEA8",
+        "name" : "MusicPlayerAppUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

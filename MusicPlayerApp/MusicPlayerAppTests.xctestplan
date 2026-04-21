@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "0E680062-4561-423D-890A-2D6ADFB65315",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:MusicPlayerApp.xcodeproj",
+        "identifier" : "9ADE8AF52F9516CE00FBCEA8",
+        "name" : "MusicPlayerAppTests"
+      }
+    }
+  ],
+  "version" : 1
+}
