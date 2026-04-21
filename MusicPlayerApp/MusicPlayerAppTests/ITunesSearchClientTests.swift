@@ -5,7 +5,7 @@ import Testing
 @MainActor
 struct ITunesSearchClientTests {
     @Test func searchURLContainsExpectedParameters() throws {
-        let url = try ITunesEndpoint.search(term: "jack johnson", limit: 25, offset: 50)
+        let url = try ITunesEndpoint.search(term: "jack johnson", limit: 25)
         let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
         let queryItems = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).compactMap { item in
             item.value.map { (item.name, $0) }
@@ -24,7 +24,7 @@ struct ITunesSearchClientTests {
 
     @Test func searchURLRejectsEmptyTerm() throws {
         #expect(throws: AppError.emptySearchTerm) {
-            _ = try ITunesEndpoint.search(term: "   ", limit: 25, offset: 0)
+            _ = try ITunesEndpoint.search(term: "   ", limit: 25)
         }
     }
 
