@@ -20,6 +20,9 @@ final class StubSongRepository: SongRepository {
     /// The in-memory recently played songs returned by the stub.
     private(set) var recentlyPlayedSongs: [Song] = []
 
+    /// The canned error thrown when recently played songs are requested.
+    var recentlyPlayedError: Error?
+
     // MARK: - Initialization
 
     /// Creates a stub repository with canned search, album, and recently played results.
@@ -53,7 +56,11 @@ final class StubSongRepository: SongRepository {
 
     /// Returns the configured recently played songs up to the requested limit.
     func recentlyPlayed(limit: Int) throws -> [Song] {
-        Array(recentlyPlayedSongs.prefix(limit))
+        if let recentlyPlayedError {
+            throw recentlyPlayedError
+        }
+
+        return Array(recentlyPlayedSongs.prefix(limit))
     }
 
     /// Updates the in-memory recently played list in the same order expected from production code.

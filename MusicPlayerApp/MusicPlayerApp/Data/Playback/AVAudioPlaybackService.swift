@@ -1,14 +1,51 @@
 import AVFoundation
 import Foundation
 
+/// Minimal player-facing abstraction used by ``AVAudioPlaybackService``.
+///
+/// This keeps the production service testable without changing its public
+/// ``AudioPlaybackService`` contract.
+@MainActor
+protocol AVPlayerControlling: AnyObject {
+
+    // MARK: - Properties
+
+    /// The current playback time in seconds.
+    var currentTimeSeconds: Double { get }
+
+    /// The loaded item duration in seconds, when available.
+    var currentItemDurationSeconds: Double? { get }
+
+    /// Indicates whether the underlying player is actively playing.
+    var isPlaying: Bool { get }
+
+    // MARK: - Methods
+
+    /// Replaces the current player item with the provided URL.
+    ///
+    /// - Parameter url: The media URL that should become the active item.
+    func replaceCurrentItem(with url: URL)
+
+    /// Starts playback for the current item.
+    func play()
+
+    /// Pauses playback for the current item.
+    func pause()
+
+    /// Seeks to the provided playback time in seconds.
+    ///
+    /// - Parameter seconds: The target playback time.
+    func seek(to seconds: Double)
+}
+
 /// An ``AudioPlaybackService`` implementation backed by `AVPlayer`.
 @MainActor
 final class AVAudioPlaybackService: AudioPlaybackService {
 
     // MARK: - Properties
 
-    /// The underlying AVPlayer responsible for audio playback.
-    private let player = AVPlayer()
+    /// The underlying player responsible for audio playback.
+    private let player: any AVPlayerControlling
 
     /// The current playback time in seconds.
     private(set) var currentTime: TimeInterval = 0
@@ -18,6 +55,15 @@ final class AVAudioPlaybackService: AudioPlaybackService {
 
     /// Indicates whether audio is currently playing.
     private(set) var isPlaying = false
+
+    // MARK: - Initialization
+
+    /// Creates an audio playback service backed by the provided player.
+    ///
+    /// - Parameter player: The player adapter used to perform playback operations.
+    init(player: any AVPlayerControlling = SystemAVPlayerController()) {
+        self.player = player
+    }
 
     // MARK: - AudioPlaybackService
 
@@ -29,8 +75,7 @@ final class AVAudioPlaybackService: AudioPlaybackService {
             throw AppError.invalidURL
         }
 
-        let item = AVPlayerItem(url: url)
-        player.replaceCurrentItem(with: item)
+        player.replaceCurrentItem(with: url)
         currentTime = 0
         duration = 0
         isPlaying = false
@@ -56,19 +101,70 @@ final class AVAudioPlaybackService: AudioPlaybackService {
     /// - Parameter time: The target playback time in seconds.
     func seek(to time: TimeInterval) {
         let safeTime = max(0, min(time, duration > 0 ? duration : time))
-        player.seek(to: CMTime(seconds: safeTime, preferredTimescale: 600))
+        player.seek(to: safeTime)
         currentTime = safeTime
     }
 
     /// Synchronizes the exposed playback state with the underlying `AVPlayer`.
     func refresh() {
-        currentTime = player.currentTime().seconds.finiteValue(or: 0) ?? 0
+        currentTime = player.currentTimeSeconds.finiteValue(or: 0) ?? 0
 
-        if let itemDuration = player.currentItem?.duration.seconds.finiteValue(or: nil) {
+        if let itemDuration = player.currentItemDurationSeconds?.finiteValue(or: nil) {
             duration = itemDuration
         }
 
-        isPlaying = player.timeControlStatus == .playing
+        isPlaying = player.isPlaying
+    }
+}
+
+/// Production adapter that bridges ``AVPlayer`` into ``AVPlayerControlling``.
+@MainActor
+private final class SystemAVPlayerController: AVPlayerControlling {
+
+    // MARK: - Properties
+
+    /// The concrete system player used for playback.
+    private let player = AVPlayer()
+
+    /// The current playback time in seconds.
+    var currentTimeSeconds: Double {
+        player.currentTime().seconds
+    }
+
+    /// The loaded item duration in seconds, when available.
+    var currentItemDurationSeconds: Double? {
+        player.currentItem?.duration.seconds
+    }
+
+    /// Indicates whether the underlying player is actively playing.
+    var isPlaying: Bool {
+        player.timeControlStatus == .playing
+    }
+
+    // MARK: - AVPlayerControlling
+
+    /// Replaces the current player item with the provided URL.
+    ///
+    /// - Parameter url: The media URL that should become the active item.
+    func replaceCurrentItem(with url: URL) {
+        player.replaceCurrentItem(with: AVPlayerItem(url: url))
+    }
+
+    /// Starts playback for the current item.
+    func play() {
+        player.play()
+    }
+
+    /// Pauses playback for the current item.
+    func pause() {
+        player.pause()
+    }
+
+    /// Seeks to the provided playback time in seconds.
+    ///
+    /// - Parameter seconds: The target playback time.
+    func seek(to seconds: Double) {
+        player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
     }
 }
 

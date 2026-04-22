@@ -27,6 +27,17 @@ struct HomeViewModelTests {
         #expect(repository.searchRequests.isEmpty)
     }
 
+    @Test func initialLoadPublishesErrorWhenRecentlyPlayedFails() async {
+        let page = SearchPage(query: "demo", offset: 0, limit: 25, resultCount: 1, songs: [Song.stub()])
+        let repository = StubSongRepository(searchResult: .success(page))
+        repository.recentlyPlayedError = AppError.transport("Offline")
+        let viewModel = HomeViewModel(repository: repository)
+
+        await viewModel.loadInitialIfNeeded()
+
+        #expect(viewModel.state == .failed(.transport("Offline")))
+    }
+
     @Test func searchPublishesLoadedSongs() async {
         let song = Song.stub()
         let page = SearchPage(query: "demo", offset: 0, limit: 25, resultCount: 1, songs: [song])

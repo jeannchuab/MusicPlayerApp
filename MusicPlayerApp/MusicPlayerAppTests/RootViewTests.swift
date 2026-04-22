@@ -16,5 +16,15 @@ struct RootViewTests {
 
         #expect(configuration.usesUITestData == false)
         #expect(configuration.skipsSplash == false)
+        #expect(configuration.fixtureMode == .standard)
+    }
+
+    @MainActor
+    @Test func launchConfigurationReadsFixtureModes() {
+        let emptyConfiguration = AppLaunchConfiguration(arguments: ["MusicPlayerApp", "--ui-testing", "--ui-testing-empty"])
+        let errorConfiguration = AppLaunchConfiguration(arguments: ["MusicPlayerApp", "--ui-testing", "--ui-testing-error"])
+
+        #expect(emptyConfiguration.fixtureMode == .empty)
+        #expect(errorConfiguration.fixtureMode == .error)
     }
 }

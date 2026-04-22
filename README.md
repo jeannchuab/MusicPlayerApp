@@ -1,116 +1,116 @@
 # MusicPlayerApp
 
-MusicPlayerApp is an iPhone-focused SwiftUI implementation
+MusicPlayerApp is a SwiftUI music browsing and preview experience built for the Music AI iPhone code challenge. The application integrates with the iTunes Search API, supports preview playback, persists cached data locally, and follows a feature-first MVVM structure with protocol-based boundaries and Swift Concurrency.
 
-## Challenge Scope
+## References
+
+- Requirement: [Music AI iPhone Challenge](https://moisesai.notion.site/iPhone-31f143d913108013a685dd9af4f657cb)
+- Figma design: [Code Challenge](https://www.figma.com/design/uuhUN9OZYqNZkBxuDq9FWh/Code-Challenge?node-id=10985-10110&t=etEwvDfga5a2EMBw-4)
+- API reference: [iTunes Search API](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/UnderstandingSearchResults.html#//apple_ref/doc/uid/TP40017632-CH8-SW1)
+
+## Platform
 
 - Swift 6
 - SwiftUI
-- MVVM
-- Swift concurrency
-- iTunes Search API integration
-- SwiftData cache in a later implementation step
-- Automated tests
-- iPhone UI based on the provided Figma flow
-- Optional extras: error states, swipe to refresh, organized repository, player controls, timeline seek, and accessibility
+- Minimum iOS version: `iOS 17.4`
+- Device support in this submission: `iPhone only`
 
-Dedicated iPad UI/UX is intentionally out of scope for this implementation plan.
+This implementation is intentionally optimized for the iPhone experience defined in the provided Figma. A dedicated iPad layout is not included in the current scope.
 
-## Architecture Direction
+## Features
 
-The app is organized around feature-first MVVM with protocol-based dependencies:
+- Search-based song discovery powered by the iTunes Search API
+- Preview playback using `AVPlayer`
+- Album details flow from player and song options
+- Recently played history
+- Offline-friendly cache for search results, albums, and playback history using SwiftData
+- Custom bottom sheet interactions for song options
 
-- `Core`: domain concepts shared across features.
-- `Data`: API, persistence, DTO mapping, and repositories.
-- `DesignSystem`: reusable colors, typography, and UI primitives.
-- `Features`: user-facing flows such as Home, Player, Album, and shared sheets.
-- `Support`: dependency container and environment wiring.
+## Extra Points Implemented
 
-Step 1 leaves the app on a temporary root screen while the architecture and project baseline are prepared.
+- Share option
+- Repeat song option
+- Forward and backward track actions
+- Drag-to-seek playback position
+- Accessibility support
+- Empty state screens
 
-## Step 2: Domain And Network Baseline
+## Architecture
 
-The first real data boundary is in place:
+The project is organized around feature-first MVVM with clear separation between domain, data, design system, and UI layers.
 
-- `Song`, `Album`, `SearchPage`, `LoadableState`, and `AppError` describe app-facing domain data.
-- `MusicSearchService`, `AlbumLookupService`, and `SongRepository` keep features independent from concrete API implementations.
-- `ITunesSearchClient` talks to the iTunes Search API using `async/await` and an injectable `HTTPClient`.
-- iTunes DTOs are mapped into domain models before leaving the data layer.
-- Unit fixtures cover search and album lookup responses without relying on live network calls.
+- `Core`: domain models and protocols
+- `Data`: API integration, DTOs, mappers, repositories, playback, and caching
+- `DesignSystem`: typography and colors
+- `Features`: Home, Player, Album, Splash, Root, and shared UI components
+- `Support`: dependency wiring, launch configuration, fixtures, and environment integration
 
-## Step 3: Repository And Offline Cache
+Protocol-based abstractions keep feature code isolated from implementation details:
 
-The repository layer now composes the live iTunes client with a SwiftData cache:
+- `SongRepository`
+- `MusicSearchService`
+- `AlbumLookupService`
+- `AudioPlaybackService`
+- `HTTPClient`
 
-- `CachedSongRepository` saves successful search and album responses.
-- `SwiftDataSongCacheStore` stores songs, search pages, and albums for offline fallback.
-- Feature code depends on `SongRepository`, so the data source can be swapped in tests or future API changes.
+The production repository uses live iTunes services plus a SwiftData-backed cache fallback.
 
-## Step 4: Home Search Experience
+## Swift Concurrency
 
-The first user-facing screen is now in place:
+Swift Concurrency is used throughout the app:
 
-- `HomeViewModel` owns search, refresh, pagination, selection, loading, empty, and error states.
-- `HomeView` renders a searchable song list with artwork, pull-to-refresh, infinite scroll, and retry handling.
-- Selecting a song opens the dedicated player experience.
+- `async/await` for network and repository operations
+- `@MainActor` isolation for UI-facing state and services
+- SwiftUI `.task` for screen lifecycle-driven loading
+- `Task` usage for async UI-triggered operations such as search and playback updates
 
-## Step 5: Player Experience
+## Running The App
 
-The dedicated player screen is now connected from the song list:
+1. Open [MusicPlayerApp.xcodeproj](/Users/jeannchuab/Projects/jeannchuab/MusicPlayerApp/MusicPlayerApp/MusicPlayerApp.xcodeproj)
+2. Select the `MusicPlayerApp` scheme
+3. Choose an iPhone simulator running iOS 17.4 or newer
+4. Build and run
 
-- `PlayerViewModel` owns playback loading, play/pause, timeline seek, progress updates, and formatted time state.
-- `AVAudioPlaybackService` wraps `AVPlayer` behind `AudioPlaybackService`, keeping the player replaceable in tests.
-- `PlayerView` presents artwork, song metadata, timeline controls, playback controls, and a more-options bottom sheet.
+## Running Tests
 
-## Step 6: Album Experience
-
-Album navigation is now connected from the player more-options sheet:
-
-- `AlbumViewModel` loads album details through `SongRepository.lookupAlbum`.
-- `AlbumView` renders album artwork, title, artist, track count, refresh, error handling, and playable tracks.
-- Album track selection opens the same dedicated player flow, keeping playback behavior consistent.
-
-## Step 7: Recently Played
-
-Recently played support now uses the existing SwiftData cache:
-
-- `SongRepository` exposes recently played reads and writes.
-- `SwiftDataSongCacheStore` stores the latest play timestamp per song and returns the most recent songs first.
-- The Home screen shows a horizontal Recently Played section after the user opens songs.
-
-## Step 8: Splash And Launch Flow
-
-The app now starts with a lightweight splash experience:
-
-- `SplashView` introduces the app before transitioning into Home.
-- `AppLaunchConfiguration` centralizes launch flags for UI tests and local diagnostics.
-- UI tests can skip the splash and use fixture data with `--ui-testing --skip-splash`.
-
-## Step 9: Final Evaluation Polish
-
-The implementation now has evaluation-facing polish:
-
-- Key screens and states have accessibility identifiers for UI automation.
-- Song rows and player controls include clearer accessibility labels and values.
-- UI tests launch against deterministic fixture data instead of live API calls.
-
-## Running The Project
-
-- Open `MusicPlayerApp/MusicPlayerApp.xcodeproj` in Xcode.
-- Select the `MusicPlayerApp` scheme.
-- Run on an iPhone simulator or device using iOS 17.6 or newer.
-
-## Verification
-
-The main verification commands used during implementation are:
+Run from Xcode using `Product > Test`, or use:
 
 ```bash
-xcodebuild build -project MusicPlayerApp/MusicPlayerApp.xcodeproj -scheme MusicPlayerApp -destination generic/platform=iOS -derivedDataPath /tmp/MusicPlayerAppDerivedData CODE_SIGNING_ALLOWED=NO
-xcodebuild build-for-testing -project MusicPlayerApp/MusicPlayerApp.xcodeproj -scheme MusicPlayerApp -destination generic/platform=iOS -derivedDataPath /tmp/MusicPlayerAppDerivedData CODE_SIGNING_ALLOWED=NO
+xcodebuild build -project MusicPlayerApp/MusicPlayerApp.xcodeproj -scheme MusicPlayerApp -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
+xcodebuild build-for-testing -project MusicPlayerApp/MusicPlayerApp.xcodeproj -scheme MusicPlayerApp -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
 ```
 
-## Trade-offs
+UI tests support deterministic launch behavior through launch arguments:
 
-- The iTunes Search API provides preview clips, so playback is limited to the available preview URL rather than full songs.
-- SwiftData is used as an offline fallback cache for search, album details, and recently played songs.
-- Dedicated iPad UI remains intentionally out of scope; the SwiftUI layout is compatible, but the design target is iPhone.
+- `--ui-testing`: launches the app with fixture data and silent playback services instead of live API-dependent behavior
+- `--skip-splash`: skips the splash screen delay so UI tests start directly in the main flow
+
+## Notes
+
+- Playback uses the preview URLs returned by the iTunes Search API, so full-length songs are not available.
+- The iTunes Search API does not provide documented server-side pagination beyond `limit`, so the app fetches a larger search result batch and paginates locally.
+- Search, album data, and recently played songs are cached to improve resilience and support fallback behavior.
+- The Home, Player, and Album flows share a reusable song options sheet component.
+
+## Screenshots
+
+Add screenshots and recordings here.
+
+### Home
+
+- `[Add image here]`
+- `[Add video here]`
+
+### Player
+
+- `[Add image here]`
+- `[Add video here]`
+
+### Album
+
+- `[Add image here]`
+- `[Add video here]`
+
+### Splash
+
+- `[Add image here]`

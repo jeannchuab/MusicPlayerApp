@@ -57,6 +57,7 @@ struct HomeView: View {
             ZStack {
                 AppTheme.background
                     .ignoresSafeArea()
+                    .contentShape(Rectangle())
 
                 VStack(spacing: 0) {
                     header
@@ -70,6 +71,9 @@ struct HomeView: View {
             .accessibilityIdentifier("home.screen")
             .task {
                 await viewModel.loadInitialIfNeeded()
+            }
+            .onTapGesture {
+                isSearchFocused = false
             }
             .navigationDestination(item: selectedSongBinding) { song in
                 PlayerView(
@@ -189,9 +193,11 @@ struct HomeView: View {
                 SongRowView(
                     song: song,
                     onTap: {
+                        isSearchFocused = false
                         viewModel.select(song)
                     },
                     onTapMenu: {
+                        isSearchFocused = false
                         menuSong = song
                         showsRowOptions = true
                     }

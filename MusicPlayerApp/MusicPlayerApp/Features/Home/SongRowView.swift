@@ -78,6 +78,7 @@ struct SongRowView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("song.row.\(song.id)")
             .accessibilityLabel("\(song.title), \(song.artistName)")
             .accessibilityHint("Opens the player")
 
@@ -87,10 +88,11 @@ struct SongRowView: View {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.white.opacity(0.45))
-                    .frame(width: 24, height: 24)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .accessibilityIdentifier("song.row.menu.\(song.id)")
             .accessibilityLabel("More options for \(song.title)")
         }
         .frame(height: 68)

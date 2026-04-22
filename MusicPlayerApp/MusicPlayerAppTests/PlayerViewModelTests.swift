@@ -57,6 +57,36 @@ struct PlayerViewModelTests {
         #expect(PlayerViewModel.formattedTime(65) == "1:05")
     }
 
+    @Test func computedPlaybackPropertiesReflectCurrentState() {
+        let service = StubAudioPlaybackService(currentTime: 65, duration: 130)
+        let viewModel = PlayerViewModel(
+            song: .stub(durationMilliseconds: 130_000),
+            playbackService: service
+        )
+
+        viewModel.refreshPlaybackState()
+
+        #expect(viewModel.progress == 0.5)
+        #expect(viewModel.currentTimeText == "1:05")
+        #expect(viewModel.durationText == "2:10")
+    }
+
+    @Test func refreshPlaybackStateRepeatsTheCurrentSongWhenRepeatIsEnabled() {
+        let service = StubAudioPlaybackService(currentTime: 30, duration: 30, isPlaying: false)
+        let viewModel = PlayerViewModel(
+            song: .stub(durationMilliseconds: 30_000),
+            playbackService: service
+        )
+        viewModel.isRepeating = true
+
+        viewModel.refreshPlaybackState()
+
+        #expect(service.seekRequests == [0])
+        #expect(service.playRequestCount == 1)
+        #expect(viewModel.isPlaying)
+        #expect(viewModel.currentTime == 0)
+    }
+
     @Test func nextTrackLoadsAndPlaysNextSongFromPlaylist() async {
         let service = StubAudioPlaybackService(duration: 30)
         let songs = [

@@ -34,7 +34,7 @@ struct AppDependencies {
             return AppDependencies(
                 launchConfiguration: launchConfiguration,
                 baselineStatus: "UI test data ready",
-                songRepository: FixtureSongRepository(),
+                songRepository: FixtureSongRepository(mode: launchConfiguration.fixtureMode),
                 modelContainer: container,
                 makeAudioPlaybackService: { SilentAudioPlaybackService() }
             )

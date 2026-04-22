@@ -108,6 +108,7 @@ struct PlayerView: View {
                     Image(systemName: "ellipsis")
                 }
                 .foregroundStyle(AppTheme.primaryText)
+                .accessibilityIdentifier("player.moreOptionsButton")
                 .accessibilityLabel("More options")
                 .accessibilityHint("Shows actions for the current song")
             }
@@ -273,8 +274,10 @@ struct PlayerView: View {
             } label: {
                 Image("ic-previous-bar-fill")
             }
+            .accessibilityIdentifier("player.previousButton")
             .accessibilityLabel("Previous track")
             .accessibilityHint("Plays the previous song in the current playlist")
+            .accessibilityAddTraits(.isButton)
             
             Button {
                 viewModel.togglePlayPause()
@@ -284,6 +287,7 @@ struct PlayerView: View {
             } label: {
                 PlayPauseButton(isPlaying: viewModel.isPlaying)
             }
+            .accessibilityIdentifier("player.playPauseButton")
             .accessibilityLabel(viewModel.isPlaying ? "Pause" : "Play")
             .accessibilityHint(viewModel.isPlaying ? "Pauses the current song" : "Starts the current song")
             .accessibilityValue(viewModel.isPlaying ? "Playing" : "Paused")
@@ -299,6 +303,7 @@ struct PlayerView: View {
             } label: {
                 Image("ic-forward-bar-fill")
             }
+            .accessibilityIdentifier("player.nextButton")
             .accessibilityLabel("Next track")
             .accessibilityHint("Plays the next song in the current playlist")
         }

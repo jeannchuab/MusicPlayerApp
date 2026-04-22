@@ -4,11 +4,6 @@ import SwiftUI
 struct CustomSheetView<Content: View>: View {
 
     // MARK: - Properties
-
-    //TODO: Opening the sheet is not smooth/animated
-    //TODO: Test on iOS 18.6
-    //TODO: Update 
-    //TODO: Issue when tap back on Album view
     
     /// Binding that controls whether the sheet is visible.
     @Binding private var isPresented: Bool
@@ -68,7 +63,7 @@ struct CustomSheetView<Content: View>: View {
         GeometryReader { proxy in
             let bottomInset = proxy.safeAreaInsets.bottom
             let sheetHeight = contentHeight + bottomInset
-            let hiddenOffset = sheetHeight + 34
+            let hiddenOffset = Self.hiddenOffset(for: sheetHeight)
             let visibleOffset = isPresented ? dragOffset : hiddenOffset
 
             ZStack(alignment: .bottom) {
@@ -130,7 +125,10 @@ struct CustomSheetView<Content: View>: View {
                 dragOffset = max(value.translation.height, 0)
             }
             .onEnded { value in
-                let shouldDismiss = value.translation.height > 72 || value.predictedEndTranslation.height > 128
+                let shouldDismiss = Self.shouldDismiss(
+                    translation: value.translation.height,
+                    predictedEndTranslation: value.predictedEndTranslation.height
+                )
 
                 if shouldDismiss {
                     dismiss()
@@ -151,5 +149,26 @@ struct CustomSheetView<Content: View>: View {
     /// The spring animation shared by presentation and dismissal transitions.
     private var sheetAnimation: Animation {
         .spring(response: 0.36, dampingFraction: 0.92, blendDuration: 0.08)
+    }
+
+    /// Returns the off-screen offset used when the sheet is hidden.
+    ///
+    /// - Parameter sheetHeight: The total rendered sheet height.
+    /// - Returns: The offset used to place the sheet below the visible viewport.
+    static func hiddenOffset(for sheetHeight: CGFloat) -> CGFloat {
+        sheetHeight + 34
+    }
+
+    /// Returns whether a drag gesture should dismiss the sheet.
+    ///
+    /// - Parameters:
+    ///   - translation: The final drag translation.
+    ///   - predictedEndTranslation: The predicted end translation for the drag.
+    /// - Returns: `true` when the gesture crosses the dismissal threshold.
+    static func shouldDismiss(
+        translation: CGFloat,
+        predictedEndTranslation: CGFloat
+    ) -> Bool {
+        translation > 72 || predictedEndTranslation > 128
     }
 }

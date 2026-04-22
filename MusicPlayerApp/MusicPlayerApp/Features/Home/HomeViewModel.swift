@@ -174,14 +174,28 @@ final class HomeViewModel: ObservableObject {
 
     /// Fetches the 10 most recently played songs from the repository and updates ``recentlyPlayed``.
     private func loadRecentlyPlayed() {
-        recentlyPlayed = (try? repository.recentlyPlayed(limit: 10)) ?? []
+        do {
+            recentlyPlayed = try repository.recentlyPlayed(limit: 10)
+        } catch {
+            recentlyPlayed = []
+        }
     }
 
     /// Resets search results and populates the visible song list with the recently played history.
     private func loadRecentlyPlayedAsInitialResults() {
         allSearchResults = []
-        loadRecentlyPlayed()
-        currentSongs = recentlyPlayed
-        state = recentlyPlayed.isEmpty ? .empty : .loaded(recentlyPlayed)
+        do {
+            recentlyPlayed = try repository.recentlyPlayed(limit: 10)
+            currentSongs = recentlyPlayed
+            state = recentlyPlayed.isEmpty ? .empty : .loaded(recentlyPlayed)
+        } catch let appError as AppError {
+            recentlyPlayed = []
+            currentSongs = []
+            state = .failed(appError)
+        } catch {
+            recentlyPlayed = []
+            currentSongs = []
+            state = .failed(.unknown(error.localizedDescription))
+        }
     }
 }
