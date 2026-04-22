@@ -39,19 +39,16 @@ struct SongRowView: View {
         HStack(spacing: 12) {
             Button(action: onTap) {
                 HStack(spacing: 12) {
-                    AsyncImage(url: song.artworkURL) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        default:
+                    RemoteArtworkView(url: song.artworkURL) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
                             Image(systemName: "music.note")
                                 .font(.title3.weight(.semibold))
                                 .foregroundStyle(AppTheme.accent)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .background(AppTheme.surface)
-                        }
                     }
                     .frame(width: 52, height: 52)
                     .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))

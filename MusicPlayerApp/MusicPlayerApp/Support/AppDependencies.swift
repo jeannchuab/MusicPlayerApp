@@ -18,6 +18,9 @@ struct AppDependencies {
     /// The repository used by feature screens for search and playback history.
     let songRepository: any SongRepository
 
+    /// The shared artwork loader used by feature screens for offline-capable image rendering.
+    let artworkLoader: any ArtworkLoading
+
     /// The shared SwiftData model container.
     let modelContainer: ModelContainer
 
@@ -35,6 +38,7 @@ struct AppDependencies {
                 launchConfiguration: launchConfiguration,
                 baselineStatus: "UI test data ready",
                 songRepository: FixtureSongRepository(mode: launchConfiguration.fixtureMode),
+                artworkLoader: CachedArtworkLoader(),
                 modelContainer: container,
                 makeAudioPlaybackService: { SilentAudioPlaybackService() }
             )
@@ -52,6 +56,7 @@ struct AppDependencies {
             launchConfiguration: launchConfiguration,
             baselineStatus: "Data and home feed ready",
             songRepository: repository,
+            artworkLoader: CachedArtworkLoader(),
             modelContainer: container,
             makeAudioPlaybackService: { AVAudioPlaybackService() }
         )

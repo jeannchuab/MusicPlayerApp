@@ -154,19 +154,16 @@ struct PlayerView: View {
 
     /// The primary album artwork displayed near the top of the player.
     private var artwork: some View {
-        AsyncImage(url: viewModel.song.artworkURL) { phase in
-            switch phase {
-            case .success(let image):
-                image
-                    .resizable()
-                    .scaledToFill()
-            default:
+        RemoteArtworkView(url: viewModel.song.artworkURL) { image in
+            image
+                .resizable()
+                .scaledToFill()
+        } placeholder: {
                 Image(systemName: "music.note")
                     .font(.system(size: 72, weight: .semibold))
                     .foregroundStyle(AppTheme.accent)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(AppTheme.surface)
-            }
         }
         .frame(maxWidth: 264, maxHeight: 264)
         .aspectRatio(1, contentMode: .fit)

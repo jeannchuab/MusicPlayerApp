@@ -117,19 +117,16 @@ struct AlbumView: View {
         List {
             Section {
                 VStack(spacing: 16) {
-                    AsyncImage(url: album.artworkURL) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        default:
+                    RemoteArtworkView(url: album.artworkURL) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
                             Image(systemName: "music.note")
                                 .font(.system(size: 56, weight: .semibold))
                                 .foregroundStyle(AppTheme.accent)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .background(AppTheme.surface)
-                        }
                     }
                     .frame(width: 210, height: 210)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
