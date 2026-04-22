@@ -31,6 +31,9 @@ struct PlayerView: View {
     /// recently played state or visible song ordering.
     private let onSongPlayed: (Song) -> Void
 
+    /// The preview cache manager used to store and resolve offline preview files.
+    private let previewCacheManager: any PreviewCacheManaging
+
     // MARK: - Initialization
 
     /// Creates the player for a selected song and the playlist context it
@@ -45,20 +48,28 @@ struct PlayerView: View {
     ///     playback service instance.
     ///   - onSongPlayed: Callback invoked when playback should update parent
     ///     state, such as recently played songs.
+    ///   - previewCacheManager: The preview cache manager used to store and resolve offline preview files.
     init(
         song: Song,
         playlist: [Song] = [],
         songRepository: any SongRepository,
         playbackService: any AudioPlaybackService,
         makeAudioPlaybackService: @escaping @MainActor () -> any AudioPlaybackService,
-        onSongPlayed: @escaping (Song) -> Void = { _ in }
+        onSongPlayed: @escaping (Song) -> Void = { _ in },
+        previewCacheManager: any PreviewCacheManaging
     ) {
         _viewModel = StateObject(
-            wrappedValue: PlayerViewModel(song: song, playlist: playlist, playbackService: playbackService)
+            wrappedValue: PlayerViewModel(
+                song: song,
+                playlist: playlist,
+                playbackService: playbackService,
+                previewCacheManager: previewCacheManager
+            )
         )
         self.songRepository = songRepository
         self.makeAudioPlaybackService = makeAudioPlaybackService
         self.onSongPlayed = onSongPlayed
+        self.previewCacheManager = previewCacheManager
     }
 
     // MARK: - View Body
@@ -126,7 +137,8 @@ struct PlayerView: View {
                 collectionId: route.collectionId,
                 repository: songRepository,
                 makeAudioPlaybackService: makeAudioPlaybackService,
-                onSongPlayed: onSongPlayed
+                onSongPlayed: onSongPlayed,
+                previewCacheManager: previewCacheManager
             )
         }
         .sheet(isPresented: isShowingShareSheet) {
@@ -199,10 +211,34 @@ struct PlayerView: View {
                 .accessibilityHint("Repeats the current song when it finishes")
                 .accessibilityValue(viewModel.isRepeating ? "On" : "Off")
                 .accessibilityIdentifier("player.repeatButton")
+
+                Button {
+                    Task {
+                        await viewModel.toggleStoredState()
+                    }
+                } label: {
+                    Image(systemName: viewModel.previewStorageSymbolName)
+                        .symbolRenderingMode(.hierarchical)
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundStyle(
+                            viewModel.previewStorageState == .stored
+                            ? AppTheme.accent
+                            : AppTheme.secondaryText
+                        )
+                }
+                .disabled(viewModel.previewStorageState == .storing)
+                .accessibilityIdentifier("player.previewStorageButton")
+                .accessibilityLabel(viewModel.previewStorageLabel)
+                .accessibilityHint(
+                    viewModel.previewStorageState == .stored
+                    ? "Removes the downloaded preview file from this device"
+                    : "Downloads the preview file for offline playback"
+                )
+                .accessibilityValue(viewModel.previewStorageState == .stored ? "Stored" : "Not stored")
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(viewModel.song.title) by \(viewModel.song.artistName)")
+        .accessibilityElement(children: .contain)
     }
 
     /// The playback scrubber and elapsed and total time labels.

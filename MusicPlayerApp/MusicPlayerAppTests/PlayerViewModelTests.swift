@@ -7,7 +7,8 @@ struct PlayerViewModelTests {
     @Test func loadDoNotStartsPlaybackWhenPreviewURLExists() async {
         let service = StubAudioPlaybackService(duration: 30)
         let song = Song.stub(previewURL: URL(string: "https://example.com/preview.m4a"))
-        let viewModel = PlayerViewModel(song: song, playbackService: service)
+        let cacheManager = StubPreviewCacheManager()
+        let viewModel = PlayerViewModel(song: song, playbackService: service, previewCacheManager: cacheManager)
 
         await viewModel.load()
 
@@ -19,7 +20,11 @@ struct PlayerViewModelTests {
     @Test func loadPublishesErrorWhenPreviewURLIsMissing() async {
         let service = StubAudioPlaybackService()
         let song = Song.stub(previewURL: nil)
-        let viewModel = PlayerViewModel(song: song, playbackService: service)
+        let viewModel = PlayerViewModel(
+            song: song,
+            playbackService: service,
+            previewCacheManager: StubPreviewCacheManager()
+        )
 
         await viewModel.load()
 
@@ -31,7 +36,8 @@ struct PlayerViewModelTests {
         let service = StubAudioPlaybackService(duration: 40)
         let viewModel = PlayerViewModel(
             song: .stub(durationMilliseconds: 40_000),
-            playbackService: service
+            playbackService: service,
+            previewCacheManager: StubPreviewCacheManager()
         )
 
         viewModel.seek(toProgress: 0.5)
@@ -43,7 +49,11 @@ struct PlayerViewModelTests {
 
     @Test func togglePlayPauseMirrorsServiceState() {
         let service = StubAudioPlaybackService()
-        let viewModel = PlayerViewModel(song: .stub(), playbackService: service)
+        let viewModel = PlayerViewModel(
+            song: .stub(),
+            playbackService: service,
+            previewCacheManager: StubPreviewCacheManager()
+        )
 
         viewModel.togglePlayPause()
         #expect(viewModel.isPlaying)
@@ -61,7 +71,8 @@ struct PlayerViewModelTests {
         let service = StubAudioPlaybackService(currentTime: 65, duration: 130)
         let viewModel = PlayerViewModel(
             song: .stub(durationMilliseconds: 130_000),
-            playbackService: service
+            playbackService: service,
+            previewCacheManager: StubPreviewCacheManager()
         )
 
         viewModel.refreshPlaybackState()
@@ -75,7 +86,8 @@ struct PlayerViewModelTests {
         let service = StubAudioPlaybackService(currentTime: 30, duration: 30, isPlaying: false)
         let viewModel = PlayerViewModel(
             song: .stub(durationMilliseconds: 30_000),
-            playbackService: service
+            playbackService: service,
+            previewCacheManager: StubPreviewCacheManager()
         )
         viewModel.isRepeating = true
 
@@ -93,8 +105,13 @@ struct PlayerViewModelTests {
             Song.stub(id: 1, title: "One", previewURL: URL(string: "https://example.com/one.m4a")),
             Song.stub(id: 2, title: "Two", previewURL: URL(string: "https://example.com/two.m4a"))
         ]
-        let viewModel = PlayerViewModel(song: songs[0], playlist: songs, playbackService: service)
-
+        let cacheManager = StubPreviewCacheManager()
+        let viewModel = PlayerViewModel(
+            song: songs[0],
+            playlist: songs,
+            playbackService: service,
+            previewCacheManager: cacheManager
+        )
         await viewModel.playNextTrack()
 
         #expect(viewModel.song == songs[1])
@@ -109,8 +126,13 @@ struct PlayerViewModelTests {
             Song.stub(id: 1, title: "One", previewURL: URL(string: "https://example.com/one.m4a")),
             Song.stub(id: 2, title: "Two", previewURL: URL(string: "https://example.com/two.m4a"))
         ]
-        let viewModel = PlayerViewModel(song: songs[1], playlist: songs, playbackService: service)
-
+        let cacheManager = StubPreviewCacheManager()
+        let viewModel = PlayerViewModel(
+            song: songs[1],
+            playlist: songs,
+            playbackService: service,
+            previewCacheManager: cacheManager
+        )
         await viewModel.playPreviousTrack()
 
         #expect(viewModel.song == songs[0])
@@ -122,7 +144,12 @@ struct PlayerViewModelTests {
     @Test func previousTrackReplaysCurrentSongWhenCurrentSongIsFirst() async {
         let service = StubAudioPlaybackService(currentTime: 12, duration: 30)
         let song = Song.stub(id: 1, title: "One")
-        let viewModel = PlayerViewModel(song: song, playlist: [song], playbackService: service)
+        let viewModel = PlayerViewModel(
+            song: song,
+            playlist: [song],
+            playbackService: service,
+            previewCacheManager: StubPreviewCacheManager()
+        )
 
         await viewModel.playPreviousTrack()
 
@@ -131,5 +158,93 @@ struct PlayerViewModelTests {
         #expect(service.seekRequests == [0])
         #expect(service.playRequestCount == 1)
         #expect(viewModel.isPlaying)
+    }
+
+    @Test func loadPrefersCachedPreviewURLWhenAvailable() async throws {
+        let service = StubAudioPlaybackService(duration: 30)
+        let remoteURL = try #require(URL(string: "https://example.com/preview.m4a"))
+        let localURL = URL(fileURLWithPath: "/tmp/cached-preview.m4a")
+        let cacheManager = StubPreviewCacheManager(
+            cachedRemoteURLs: [remoteURL],
+            localFileURLs: [remoteURL: localURL]
+        )
+        let viewModel = PlayerViewModel(
+            song: .stub(previewURL: remoteURL),
+            playbackService: service,
+            previewCacheManager: cacheManager
+        )
+
+        await viewModel.load()
+
+        #expect(service.loadedURL == localURL)
+        #expect(viewModel.previewStorageState == .stored)
+    }
+
+    @Test func toggleStoredStateCachesPreviewWhenNotStored() async throws {
+        let remoteURL = try #require(URL(string: "https://example.com/preview.m4a"))
+        let cacheManager = StubPreviewCacheManager()
+        let viewModel = PlayerViewModel(
+            song: .stub(previewURL: remoteURL),
+            playbackService: StubAudioPlaybackService(),
+            previewCacheManager: cacheManager
+        )
+
+        await viewModel.toggleStoredState()
+
+        #expect(cacheManager.cacheRequests == [remoteURL])
+        #expect(viewModel.previewStorageState == .stored)
+    }
+
+    @Test func toggleStoredStateRemovesCachedPreviewWhenStored() async throws {
+        let remoteURL = try #require(URL(string: "https://example.com/preview.m4a"))
+        let cacheManager = StubPreviewCacheManager(cachedRemoteURLs: [remoteURL])
+        let viewModel = PlayerViewModel(
+            song: .stub(previewURL: remoteURL),
+            playbackService: StubAudioPlaybackService(),
+            previewCacheManager: cacheManager
+        )
+
+        await viewModel.toggleStoredState()
+
+        #expect(cacheManager.removeRequests == [remoteURL])
+        #expect(viewModel.previewStorageState == .notStored)
+    }
+
+    @Test func playNextTrackRefreshesStoredStateForNewSong() async throws {
+        let service = StubAudioPlaybackService(duration: 30)
+        let firstURL = try #require(URL(string: "https://example.com/one.m4a"))
+        let secondURL = try #require(URL(string: "https://example.com/two.m4a"))
+        let songs = [
+            Song.stub(id: 1, title: "One", previewURL: firstURL),
+            Song.stub(id: 2, title: "Two", previewURL: secondURL)
+        ]
+        let cacheManager = StubPreviewCacheManager(cachedRemoteURLs: [secondURL])
+        let viewModel = PlayerViewModel(
+            song: songs[0],
+            playlist: songs,
+            playbackService: service,
+            previewCacheManager: cacheManager
+        )
+
+        await viewModel.playNextTrack()
+
+        #expect(viewModel.song == songs[1])
+        #expect(viewModel.previewStorageState == .stored)
+    }
+
+    @Test func toggleStoredStatePublishesErrorsWhenCachingFails() async throws {
+        let remoteURL = try #require(URL(string: "https://example.com/preview.m4a"))
+        let cacheManager = StubPreviewCacheManager()
+        cacheManager.cacheError = AppError.transport("offline")
+        let viewModel = PlayerViewModel(
+            song: .stub(previewURL: remoteURL),
+            playbackService: StubAudioPlaybackService(),
+            previewCacheManager: cacheManager
+        )
+
+        await viewModel.toggleStoredState()
+
+        #expect(viewModel.previewStorageState == .failed)
+        #expect(viewModel.errorMessage == AppError.transport("offline").userMessage)
     }
 }

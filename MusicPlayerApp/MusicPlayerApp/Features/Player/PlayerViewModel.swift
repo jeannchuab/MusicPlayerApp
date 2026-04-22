@@ -5,6 +5,26 @@ import Foundation
 @MainActor
 final class PlayerViewModel: ObservableObject {
 
+    // MARK: - Supporting Types
+
+    /// Describes whether the current song preview is stored locally for offline playback.
+    enum PreviewStorageState: Equatable {
+
+        // MARK: - Cases
+
+        /// The preview is not currently cached on disk.
+        case notStored
+
+        /// A cache or removal operation is currently in progress.
+        case storing
+
+        /// The preview is currently cached on disk.
+        case stored
+
+        /// The last cache operation failed.
+        case failed
+    }
+
     // MARK: - Published Properties
 
     /// The song currently loaded in the player.
@@ -25,10 +45,16 @@ final class PlayerViewModel: ObservableObject {
     /// Indicates whether repeat mode is currently enabled.
     @Published var isRepeating = false
 
+    /// Indicates whether the current song preview is stored locally for offline playback.
+    @Published private(set) var previewStorageState: PreviewStorageState
+
     // MARK: - Private Properties
 
     /// The playback service that performs audio operations.
     private let playbackService: any AudioPlaybackService
+
+    /// The preview cache manager used to store and resolve offline preview files.
+    private let previewCacheManager: any PreviewCacheManaging
 
     /// The normalized playlist used for previous and next navigation.
     private let playlist: [Song]
@@ -41,11 +67,19 @@ final class PlayerViewModel: ObservableObject {
     ///   - song: The song initially loaded in the player.
     ///   - playlist: The ordered songs used for previous and next navigation.
     ///   - playbackService: The playback service that performs audio operations.
-    init(song: Song, playlist: [Song] = [], playbackService: any AudioPlaybackService) {
+    ///   - previewCacheManager: The preview cache manager used to store and resolve offline preview files.
+    init(
+        song: Song,
+        playlist: [Song] = [],
+        playbackService: any AudioPlaybackService,
+        previewCacheManager: any PreviewCacheManaging
+    ) {
         self.song = song
         self.playlist = Self.normalizedPlaylist(playlist, selectedSong: song)
         self.playbackService = playbackService
+        self.previewCacheManager = previewCacheManager
         duration = song.durationSeconds ?? 30
+        previewStorageState = Self.storageState(for: song.previewURL, using: previewCacheManager)
     }
 
     // MARK: - Computed Properties
@@ -66,13 +100,40 @@ final class PlayerViewModel: ObservableObject {
         Self.formattedTime(duration)
     }
 
+    /// The accessibility-friendly label describing the current preview cache state.
+    var previewStorageLabel: String {
+        switch previewStorageState {
+        case .notStored:
+            "Store preview offline"
+        case .storing:
+            "Updating offline preview"
+        case .stored:
+            "Remove offline preview"
+        case .failed:
+            "Retry storing preview offline"
+        }
+    }
+
+    /// The SF Symbol name that matches the current preview cache state.
+    var previewStorageSymbolName: String {
+        switch previewStorageState {
+        case .notStored, .failed:
+            "arrow.down.circle"
+        case .storing:
+            "arrow.triangle.2.circlepath.circle"
+        case .stored:
+            "checkmark.circle.fill"
+        }
+    }
+
     // MARK: - Public Methods
 
     /// Loads the current song into the playback service.
     func load() async {
         do {
-            try await playbackService.load(url: song.previewURL)
+            try await playbackService.load(url: resolvedPlaybackURL(for: song))
             syncFromPlaybackService()
+            refreshPreviewStorageState()
             errorMessage = nil
         } catch let appError as AppError {
             errorMessage = appError.userMessage
@@ -136,6 +197,42 @@ final class PlayerViewModel: ObservableObject {
         isRepeating.toggle()
     }
 
+    /// Stores or removes the current song preview for offline playback.
+    func toggleStoredState() async {
+        guard previewStorageState != .storing else { return }
+
+        switch previewStorageState {
+        case .stored:
+            do {
+                try previewCacheManager.removeCachedPreview(for: song.previewURL)
+                refreshPreviewStorageState()
+                errorMessage = nil
+            } catch let appError as AppError {
+                previewStorageState = .failed
+                errorMessage = appError.userMessage
+            } catch {
+                previewStorageState = .failed
+                errorMessage = AppError.unknown(error.localizedDescription).userMessage
+            }
+        case .notStored, .failed:
+            previewStorageState = .storing
+
+            do {
+                try await previewCacheManager.cachePreview(from: song.previewURL)
+                refreshPreviewStorageState()
+                errorMessage = nil
+            } catch let appError as AppError {
+                previewStorageState = .failed
+                errorMessage = appError.userMessage
+            } catch {
+                previewStorageState = .failed
+                errorMessage = AppError.unknown(error.localizedDescription).userMessage
+            }
+        case .storing:
+            break
+        }
+    }
+
     /// Refreshes published playback state and restarts playback when repeat is enabled at the end of the song.
     func refreshPlaybackState() {
         playbackService.refresh()
@@ -159,6 +256,11 @@ final class PlayerViewModel: ObservableObject {
         isPlaying = playbackService.isPlaying
     }
 
+    /// Refreshes the published preview storage state for the current song.
+    private func refreshPreviewStorageState() {
+        previewStorageState = Self.storageState(for: song.previewURL, using: previewCacheManager)
+    }
+
     /// The index of the currently loaded song in the normalized playlist.
     private var currentIndex: Int? {
         playlist.firstIndex { $0.id == song.id }
@@ -179,12 +281,14 @@ final class PlayerViewModel: ObservableObject {
         song = nextSong
         currentTime = 0
         duration = nextSong.durationSeconds ?? 30
+        refreshPreviewStorageState()
 
         do {
-            try await playbackService.load(url: nextSong.previewURL)
+            try await playbackService.load(url: resolvedPlaybackURL(for: nextSong))
             playbackService.seek(to: 0)
             playbackService.play()
             syncFromPlaybackService()
+            refreshPreviewStorageState()
             errorMessage = nil
         } catch let appError as AppError {
             syncFromPlaybackService()
@@ -214,6 +318,27 @@ final class PlayerViewModel: ObservableObject {
         }
 
         return [selectedSong] + uniqueSongs
+    }
+
+    /// Resolves the best playback URL for the provided song, preferring cached previews when available.
+    ///
+    /// - Parameter song: The song whose playback URL should be resolved.
+    /// - Returns: A cached local file URL when present, otherwise the remote preview URL.
+    private func resolvedPlaybackURL(for song: Song) -> URL? {
+        previewCacheManager.cachedFileURL(for: song.previewURL) ?? song.previewURL
+    }
+
+    /// Derives the preview storage state for the provided remote URL.
+    ///
+    /// - Parameters:
+    ///   - remoteURL: The remote preview URL used as the cache key.
+    ///   - previewCacheManager: The preview cache manager used to inspect cached files.
+    /// - Returns: The preview storage state that matches the current cache contents.
+    private static func storageState(
+        for remoteURL: URL?,
+        using previewCacheManager: any PreviewCacheManaging
+    ) -> PreviewStorageState {
+        previewCacheManager.isPreviewCached(for: remoteURL) ? .stored : .notStored
     }
 
     /// Formats a playback time value into `m:ss`.

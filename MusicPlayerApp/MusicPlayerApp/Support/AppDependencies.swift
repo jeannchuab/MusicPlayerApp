@@ -21,6 +21,9 @@ struct AppDependencies {
     /// The shared artwork loader used by feature screens for offline-capable image rendering.
     let artworkLoader: any ArtworkLoading
 
+    /// The shared preview cache manager used by the player for offline-capable playback.
+    let previewCacheManager: any PreviewCacheManaging
+
     /// The shared SwiftData model container.
     let modelContainer: ModelContainer
 
@@ -39,6 +42,7 @@ struct AppDependencies {
                 baselineStatus: "UI test data ready",
                 songRepository: FixtureSongRepository(mode: launchConfiguration.fixtureMode),
                 artworkLoader: CachedArtworkLoader(),
+                previewCacheManager: FixturePreviewCacheManager(),
                 modelContainer: container,
                 makeAudioPlaybackService: { SilentAudioPlaybackService() }
             )
@@ -57,6 +61,7 @@ struct AppDependencies {
             baselineStatus: "Data and home feed ready",
             songRepository: repository,
             artworkLoader: CachedArtworkLoader(),
+            previewCacheManager: CachedPreviewManager(),
             modelContainer: container,
             makeAudioPlaybackService: { AVAudioPlaybackService() }
         )

@@ -123,7 +123,7 @@ private extension Song {
             albumId: albumId,
             albumTitle: albumTitle,
             artworkURL: nil,
-            previewURL: nil,
+            previewURL: URL(string: "https://example.com/previews/\(id).m4a"),
             trackViewURL: URL(string: "https://example.com/tracks/\(id)"),
             durationMilliseconds: 30_000,
             genreName: "Electronic",

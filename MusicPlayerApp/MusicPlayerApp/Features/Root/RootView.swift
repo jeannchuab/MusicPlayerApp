@@ -18,7 +18,8 @@ struct RootView: View {
         ZStack {
             HomeView(
                 repository: dependencies.songRepository,
-                makeAudioPlaybackService: dependencies.makeAudioPlaybackService
+                makeAudioPlaybackService: dependencies.makeAudioPlaybackService,
+                previewCacheManager: dependencies.previewCacheManager
             )
             .accessibilityIdentifier("root.home")
             .accessibilityLabel("Home")

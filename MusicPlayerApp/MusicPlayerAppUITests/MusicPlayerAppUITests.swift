@@ -34,6 +34,24 @@ final class MusicPlayerAppUITests: XCTestCase {
     }
 
     @MainActor
+    func testPlayerPreviewStorageButtonTogglesStoredState() throws {
+        let app = launchApp()
+
+        XCTAssertTrue(app.buttons["song.row.1"].waitForExistence(timeout: 10))
+        app.buttons["song.row.1"].tap()
+
+        let storageButton = app.buttons["player.previewStorageButton"]
+        XCTAssertTrue(storageButton.waitForExistence(timeout: 10))
+        XCTAssertEqual(storageButton.value as? String, "Not stored")
+
+        storageButton.tap()
+        XCTAssertEqual(storageButton.value as? String, "Stored")
+
+        storageButton.tap()
+        XCTAssertEqual(storageButton.value as? String, "Not stored")
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {

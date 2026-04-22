@@ -23,6 +23,9 @@ struct AlbumView: View {
     /// Factory used to provide a fresh playback service to each presented player.
     private let makeAudioPlaybackService: @MainActor () -> any AudioPlaybackService
 
+    /// The preview cache manager forwarded to the player for offline playback support.
+    private let previewCacheManager: any PreviewCacheManaging
+
     /// Callback invoked whenever playback starts from this album flow.
     private let onSongPlayed: (Song) -> Void
 
@@ -35,11 +38,13 @@ struct AlbumView: View {
     ///   - repository: The repository used to fetch album data and support downstream player flows.
     ///   - makeAudioPlaybackService: A factory that creates a fresh playback service for each presented player.
     ///   - onSongPlayed: A callback invoked whenever playback starts from the album flow.
+    ///   - previewCacheManager: The preview cache manager forwarded to the player for offline playback support.
     init(
         collectionId: Int,
         repository: any SongRepository,
         makeAudioPlaybackService: @escaping @MainActor () -> any AudioPlaybackService,
-        onSongPlayed: @escaping (Song) -> Void = { _ in }
+        onSongPlayed: @escaping (Song) -> Void = { _ in },
+        previewCacheManager: any PreviewCacheManaging
     ) {
         _viewModel = StateObject(
             wrappedValue: AlbumViewModel(collectionId: collectionId, repository: repository)
@@ -47,6 +52,7 @@ struct AlbumView: View {
         self.repository = repository
         self.makeAudioPlaybackService = makeAudioPlaybackService
         self.onSongPlayed = onSongPlayed
+        self.previewCacheManager = previewCacheManager
     }
 
     // MARK: - Body
@@ -75,7 +81,8 @@ struct AlbumView: View {
                 songRepository: repository,
                 playbackService: makeAudioPlaybackService(),
                 makeAudioPlaybackService: makeAudioPlaybackService,
-                onSongPlayed: onSongPlayed
+                onSongPlayed: onSongPlayed,
+                previewCacheManager: previewCacheManager
             )
             .presentationDragIndicator(.visible)
         }

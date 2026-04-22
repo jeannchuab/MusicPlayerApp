@@ -34,6 +34,9 @@ struct HomeView: View {
     /// The song repository forwarded to child views that need direct repository access.
     private let repository: any SongRepository
 
+    /// The preview cache manager forwarded to the player for offline playback support.
+    private let previewCacheManager: any PreviewCacheManaging
+
     // MARK: - Initialization
 
     /// Creates a new `HomeView`.
@@ -41,13 +44,16 @@ struct HomeView: View {
     /// - Parameters:
     ///   - repository: The song repository used for search, caching, and playback history.
     ///   - makeAudioPlaybackService: A factory that produces a new ``AudioPlaybackService`` each time a player is presented.
+    ///   - previewCacheManager: The preview cache manager forwarded to the player for offline playback support.
     init(
         repository: any SongRepository,
-        makeAudioPlaybackService: @escaping @MainActor () -> any AudioPlaybackService
+        makeAudioPlaybackService: @escaping @MainActor () -> any AudioPlaybackService,
+        previewCacheManager: any PreviewCacheManaging
     ) {
         _viewModel = StateObject(wrappedValue: HomeViewModel(repository: repository))
         self.makeAudioPlaybackService = makeAudioPlaybackService
         self.repository = repository
+        self.previewCacheManager = previewCacheManager
     }
 
     // MARK: - Body
@@ -84,7 +90,8 @@ struct HomeView: View {
                     makeAudioPlaybackService: makeAudioPlaybackService,
                     onSongPlayed: { song in
                         viewModel.recordPlayback(for: song)
-                    }
+                    },
+                    previewCacheManager: previewCacheManager
                 )
             }
             .navigationDestination(item: $albumRoute) { route in
@@ -94,7 +101,8 @@ struct HomeView: View {
                     makeAudioPlaybackService: makeAudioPlaybackService,
                     onSongPlayed: { song in
                         viewModel.recordPlayback(for: song)
-                    }
+                    },
+                    previewCacheManager: previewCacheManager
                 )
             }
             .sheet(isPresented: isShowingShareSheet) {
