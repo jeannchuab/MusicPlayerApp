@@ -17,18 +17,17 @@ final class NetworkConnectionMonitor: NetworkConnectionMonitoring {
     private let monitorQueue = DispatchQueue(label: "com.jeannchuab.MusicPlayerApp.NetworkConnectionMonitor")
 
     /// Indicates whether the device currently has a satisfied network path.
-    private(set) var isConnected = true
+    ///
+    /// Reads the underlying path monitor's current path directly so the value
+    /// is always up to date, even when a main-actor hop has not yet occurred.
+    var isConnected: Bool {
+        pathMonitor.currentPath.status == .satisfied
+    }
 
     // MARK: - Initialization
 
     /// Creates and starts a new network connection monitor.
     private init() {
-        pathMonitor.pathUpdateHandler = { [weak self] path in
-            Task { @MainActor [weak self] in
-                self?.isConnected = path.status == .satisfied
-            }
-        }
-
         pathMonitor.start(queue: monitorQueue)
     }
 }

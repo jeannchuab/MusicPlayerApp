@@ -39,9 +39,6 @@ final class PlayerViewModel: ObservableObject {
     /// The total duration of the current song in seconds.
     @Published private(set) var duration: TimeInterval
 
-    /// The user-facing playback error message, when one exists.
-    @Published private(set) var errorMessage: String?
-
     /// The transient banner message that should be presented by the player UI.
     @Published private(set) var bannerMessage: String?
 
@@ -151,15 +148,13 @@ final class PlayerViewModel: ObservableObject {
             try await playbackService.load(url: resolvedPlaybackURL(for: song))
             syncFromPlaybackService()
             refreshPreviewStorageState()
-            errorMessage = nil
             hasLoadedCurrentSong = true
         } catch let appError as AppError {
-            errorMessage = appError.userMessage
             hasLoadedCurrentSong = false
             maybePublishPlaybackUnavailableBanner(for: appError, song: song)
         } catch {
-            errorMessage = AppError.unknown(error.localizedDescription).userMessage
             hasLoadedCurrentSong = false
+            publishBanner(AppError.unknown(error.localizedDescription).userMessage)
         }
     }
 
@@ -238,16 +233,13 @@ final class PlayerViewModel: ObservableObject {
             do {
                 try previewCacheManager.removeCachedPreview(for: song.previewURL)
                 refreshPreviewStorageState()
-                errorMessage = nil
                 publishBanner("This song is no longer available offline")
             } catch let appError as AppError {
                 previewStorageState = .failed
-                errorMessage = appError.userMessage
                 publishBanner(appError.userMessage)
             } catch {
                 previewStorageState = .failed
-                errorMessage = AppError.unknown(error.localizedDescription).userMessage
-                publishBanner(errorMessage ?? AppError.unknown(error.localizedDescription).userMessage)
+                publishBanner(AppError.unknown(error.localizedDescription).userMessage)
             }
         case .notStored, .failed:
             previewStorageState = .storing
@@ -255,16 +247,13 @@ final class PlayerViewModel: ObservableObject {
             do {
                 try await previewCacheManager.cachePreview(from: song.previewURL)
                 refreshPreviewStorageState()
-                errorMessage = nil
                 publishBanner("This song is now available offline")
             } catch let appError as AppError {
                 previewStorageState = .failed
-                errorMessage = appError.userMessage
                 publishBanner(appError.userMessage)
             } catch {
                 previewStorageState = .failed
-                errorMessage = AppError.unknown(error.localizedDescription).userMessage
-                publishBanner(errorMessage ?? AppError.unknown(error.localizedDescription).userMessage)
+                publishBanner(AppError.unknown(error.localizedDescription).userMessage)
             }
         case .storing:
             break
@@ -340,15 +329,13 @@ final class PlayerViewModel: ObservableObject {
             playbackService.play()
             syncFromPlaybackService()
             refreshPreviewStorageState()
-            errorMessage = nil
             hasLoadedCurrentSong = true
         } catch let appError as AppError {
             syncFromPlaybackService()
-            errorMessage = appError.userMessage
             maybePublishPlaybackUnavailableBanner(for: appError, song: nextSong)
         } catch {
             syncFromPlaybackService()
-            errorMessage = AppError.unknown(error.localizedDescription).userMessage
+            publishBanner(AppError.unknown(error.localizedDescription).userMessage)
         }
     }
 
@@ -361,17 +348,15 @@ final class PlayerViewModel: ObservableObject {
             playbackService.play()
             syncFromPlaybackService()
             refreshPreviewStorageState()
-            errorMessage = nil
             hasLoadedCurrentSong = true
         } catch let appError as AppError {
             syncFromPlaybackService()
-            errorMessage = appError.userMessage
             hasLoadedCurrentSong = false
             maybePublishPlaybackUnavailableBanner(for: appError, song: song)
         } catch {
             syncFromPlaybackService()
-            errorMessage = AppError.unknown(error.localizedDescription).userMessage
             hasLoadedCurrentSong = false
+            publishBanner(AppError.unknown(error.localizedDescription).userMessage)
         }
     }
 
@@ -411,7 +396,6 @@ final class PlayerViewModel: ObservableObject {
     /// Publishes the standard offline-unavailable feedback used when a preview has not been downloaded.
     private func publishOfflineUnavailableMessage() {
         let message = "This song is not available offline"
-        errorMessage = message
         publishBanner(message)
     }
 

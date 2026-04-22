@@ -26,6 +26,7 @@ final class FixturePreviewCacheManager: PreviewCacheManaging {
     ) {
         self.fileManager = fileManager
         self.cacheDirectory = cacheDirectory ?? Self.defaultCacheDirectory(using: fileManager)
+        clearCache()
     }
 
     // MARK: - PreviewCacheManaging
@@ -77,6 +78,11 @@ final class FixturePreviewCacheManager: PreviewCacheManaging {
     }
 
     // MARK: - Helpers
+
+    /// Removes all cached fixture preview files so tests begin with a clean slate.
+    private func clearCache() {
+        try? fileManager.removeItem(at: cacheDirectory)
+    }
 
     /// Returns the disk location used for the provided preview URL.
     ///

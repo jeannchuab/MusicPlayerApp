@@ -8,8 +8,8 @@ final class StubAudioPlaybackService: AudioPlaybackService {
     var isPlaying: Bool
     var loadError: Error?
     private(set) var loadedURL: URL?
-    private(set) var seekRequests: [TimeInterval] = []
-    private(set) var playRequestCount = 0
+    var seekRequests: [TimeInterval] = []
+    var playRequestCount = 0
 
     init(currentTime: TimeInterval = 0, duration: TimeInterval = 30, isPlaying: Bool = false) {
         self.currentTime = currentTime

@@ -80,10 +80,7 @@ final class HomeViewModel: ObservableObject {
     /// without placing those songs into the main search results list.
     func loadInitialIfNeeded() async {
         guard case .idle = state else { return }
-        loadRecentlyPlayed()
-        allSearchResults = []
-        currentSongs = []
-        state = .loaded([])
+        loadRecentlyPlayedAsInitialResults()
     }
 
     /// Executes a search against the repository using the current ``searchText``.

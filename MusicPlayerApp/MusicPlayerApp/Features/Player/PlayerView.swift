@@ -100,14 +100,6 @@ struct PlayerView: View {
 
                 controls
 
-                if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .font(.app(13, relativeTo: .footnote))
-                        .foregroundStyle(AppTheme.secondaryText)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-
                 Spacer(minLength: 24)
             }
             .padding(.horizontal, 24)
