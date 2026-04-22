@@ -47,7 +47,7 @@ struct PlayerViewModelTests {
         #expect(viewModel.currentTime == 40)
     }
 
-    @Test func togglePlayPauseMirrorsServiceState() {
+    @Test func togglePlayPauseMirrorsServiceState() async {
         let service = StubAudioPlaybackService()
         let viewModel = PlayerViewModel(
             song: .stub(),
@@ -55,10 +55,10 @@ struct PlayerViewModelTests {
             previewCacheManager: StubPreviewCacheManager()
         )
 
-        viewModel.togglePlayPause()
+        await viewModel.togglePlayPause()
         #expect(viewModel.isPlaying)
 
-        viewModel.togglePlayPause()
+        await viewModel.togglePlayPause()
         #expect(viewModel.isPlaying == false)
     }
 
@@ -246,5 +246,23 @@ struct PlayerViewModelTests {
 
         #expect(viewModel.previewStorageState == .failed)
         #expect(viewModel.errorMessage == AppError.transport("offline").userMessage)
+    }
+
+    @Test func togglePlayPausePublishesOfflineBannerWhenPreviewIsNotAvailable() async throws {
+        let remoteURL = try #require(URL(string: "https://example.com/preview.m4a"))
+        let service = StubAudioPlaybackService()
+        let viewModel = PlayerViewModel(
+            song: .stub(previewURL: remoteURL),
+            playbackService: service,
+            previewCacheManager: StubPreviewCacheManager(),
+            connectionMonitor: StubNetworkConnectionMonitor(isConnected: false)
+        )
+
+        await viewModel.togglePlayPause()
+
+        #expect(service.playRequestCount == 0)
+        #expect(viewModel.isPlaying == false)
+        #expect(viewModel.errorMessage == "This song is not available offline")
+        #expect(viewModel.bannerMessage == "This song is not available offline")
     }
 }

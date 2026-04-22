@@ -42,6 +42,9 @@ final class PlayerViewModel: ObservableObject {
     /// The user-facing playback error message, when one exists.
     @Published private(set) var errorMessage: String?
 
+    /// The transient banner message that should be presented by the player UI.
+    @Published private(set) var bannerMessage: String?
+
     /// Indicates whether repeat mode is currently enabled.
     @Published var isRepeating = false
 
@@ -56,8 +59,14 @@ final class PlayerViewModel: ObservableObject {
     /// The preview cache manager used to store and resolve offline preview files.
     private let previewCacheManager: any PreviewCacheManaging
 
+    /// The monitor used to decide whether remote previews can be loaded.
+    private let connectionMonitor: any NetworkConnectionMonitoring
+
     /// The normalized playlist used for previous and next navigation.
     private let playlist: [Song]
+
+    /// Indicates whether the current song has been loaded into the playback service.
+    private var hasLoadedCurrentSong = false
 
     // MARK: - Initialization
 
@@ -68,16 +77,19 @@ final class PlayerViewModel: ObservableObject {
     ///   - playlist: The ordered songs used for previous and next navigation.
     ///   - playbackService: The playback service that performs audio operations.
     ///   - previewCacheManager: The preview cache manager used to store and resolve offline preview files.
+    ///   - connectionMonitor: The monitor used to decide whether remote previews can be loaded.
     init(
         song: Song,
         playlist: [Song] = [],
         playbackService: any AudioPlaybackService,
-        previewCacheManager: any PreviewCacheManaging
+        previewCacheManager: any PreviewCacheManaging,
+        connectionMonitor: any NetworkConnectionMonitoring = NetworkConnectionMonitor.shared
     ) {
         self.song = song
         self.playlist = Self.normalizedPlaylist(playlist, selectedSong: song)
         self.playbackService = playbackService
         self.previewCacheManager = previewCacheManager
+        self.connectionMonitor = connectionMonitor
         duration = song.durationSeconds ?? 30
         previewStorageState = Self.storageState(for: song.previewURL, using: previewCacheManager)
     }
@@ -130,21 +142,41 @@ final class PlayerViewModel: ObservableObject {
 
     /// Loads the current song into the playback service.
     func load() async {
+        guard canAttemptRemotePlayback(for: song) else {
+            hasLoadedCurrentSong = false
+            return
+        }
+
         do {
             try await playbackService.load(url: resolvedPlaybackURL(for: song))
             syncFromPlaybackService()
             refreshPreviewStorageState()
             errorMessage = nil
+            hasLoadedCurrentSong = true
         } catch let appError as AppError {
             errorMessage = appError.userMessage
+            hasLoadedCurrentSong = false
+            maybePublishPlaybackUnavailableBanner(for: appError, song: song)
         } catch {
             errorMessage = AppError.unknown(error.localizedDescription).userMessage
+            hasLoadedCurrentSong = false
         }
     }
 
     /// Toggles playback between play and pause.
-    func togglePlayPause() {
-        isPlaying ? playbackService.pause() : playbackService.play()
+    func togglePlayPause() async {
+        if isPlaying {
+            playbackService.pause()
+            syncFromPlaybackService()
+            return
+        }
+
+        guard hasLoadedCurrentSong else {
+            await loadAndStartCurrentSong()
+            return
+        }
+
+        playbackService.play()
         syncFromPlaybackService()
     }
 
@@ -207,12 +239,15 @@ final class PlayerViewModel: ObservableObject {
                 try previewCacheManager.removeCachedPreview(for: song.previewURL)
                 refreshPreviewStorageState()
                 errorMessage = nil
+                publishBanner("This song is no longer available offline")
             } catch let appError as AppError {
                 previewStorageState = .failed
                 errorMessage = appError.userMessage
+                publishBanner(appError.userMessage)
             } catch {
                 previewStorageState = .failed
                 errorMessage = AppError.unknown(error.localizedDescription).userMessage
+                publishBanner(errorMessage ?? AppError.unknown(error.localizedDescription).userMessage)
             }
         case .notStored, .failed:
             previewStorageState = .storing
@@ -221,16 +256,24 @@ final class PlayerViewModel: ObservableObject {
                 try await previewCacheManager.cachePreview(from: song.previewURL)
                 refreshPreviewStorageState()
                 errorMessage = nil
+                publishBanner("This song is now available offline")
             } catch let appError as AppError {
                 previewStorageState = .failed
                 errorMessage = appError.userMessage
+                publishBanner(appError.userMessage)
             } catch {
                 previewStorageState = .failed
                 errorMessage = AppError.unknown(error.localizedDescription).userMessage
+                publishBanner(errorMessage ?? AppError.unknown(error.localizedDescription).userMessage)
             }
         case .storing:
             break
         }
+    }
+
+    /// Clears the current transient banner message after the view has consumed it.
+    func clearBannerMessage() {
+        bannerMessage = nil
     }
 
     /// Refreshes published playback state and restarts playback when repeat is enabled at the end of the song.
@@ -268,6 +311,11 @@ final class PlayerViewModel: ObservableObject {
 
     /// Seeks back to the beginning of the current song and resumes playback.
     private func replayCurrentTrack() async {
+        guard hasLoadedCurrentSong else {
+            await loadAndStartCurrentSong()
+            return
+        }
+
         playbackService.seek(to: 0)
         playbackService.play()
         syncFromPlaybackService()
@@ -282,6 +330,9 @@ final class PlayerViewModel: ObservableObject {
         currentTime = 0
         duration = nextSong.durationSeconds ?? 30
         refreshPreviewStorageState()
+        hasLoadedCurrentSong = false
+
+        guard canAttemptRemotePlayback(for: nextSong) else { return }
 
         do {
             try await playbackService.load(url: resolvedPlaybackURL(for: nextSong))
@@ -290,13 +341,78 @@ final class PlayerViewModel: ObservableObject {
             syncFromPlaybackService()
             refreshPreviewStorageState()
             errorMessage = nil
+            hasLoadedCurrentSong = true
         } catch let appError as AppError {
             syncFromPlaybackService()
             errorMessage = appError.userMessage
+            maybePublishPlaybackUnavailableBanner(for: appError, song: nextSong)
         } catch {
             syncFromPlaybackService()
             errorMessage = AppError.unknown(error.localizedDescription).userMessage
         }
+    }
+
+    /// Loads the current song and starts playback when remote access or a cached preview is available.
+    private func loadAndStartCurrentSong() async {
+        guard canAttemptRemotePlayback(for: song) else { return }
+
+        do {
+            try await playbackService.load(url: resolvedPlaybackURL(for: song))
+            playbackService.play()
+            syncFromPlaybackService()
+            refreshPreviewStorageState()
+            errorMessage = nil
+            hasLoadedCurrentSong = true
+        } catch let appError as AppError {
+            syncFromPlaybackService()
+            errorMessage = appError.userMessage
+            hasLoadedCurrentSong = false
+            maybePublishPlaybackUnavailableBanner(for: appError, song: song)
+        } catch {
+            syncFromPlaybackService()
+            errorMessage = AppError.unknown(error.localizedDescription).userMessage
+            hasLoadedCurrentSong = false
+        }
+    }
+
+    /// Publishes a transient banner message for the player UI.
+    ///
+    /// - Parameter message: The message that should be rendered in the banner.
+    private func publishBanner(_ message: String) {
+        bannerMessage = message
+    }
+
+    /// Publishes an offline-unavailable banner when remote playback fails without a cached preview.
+    ///
+    /// - Parameters:
+    ///   - appError: The playback error that occurred.
+    ///   - song: The song whose preview failed to load.
+    private func maybePublishPlaybackUnavailableBanner(for appError: AppError, song: Song) {
+        guard case .transport = appError else { return }
+        guard previewCacheManager.isPreviewCached(for: song.previewURL) == false else { return }
+        publishOfflineUnavailableMessage()
+    }
+
+    /// Returns whether playback can proceed for the provided song using a cached preview or live internet access.
+    ///
+    /// - Parameter song: The song whose preview availability should be validated.
+    /// - Returns: `true` when playback can proceed.
+    private func canAttemptRemotePlayback(for song: Song) -> Bool {
+        guard previewCacheManager.isPreviewCached(for: song.previewURL) == false else { return true }
+        guard song.previewURL != nil else { return true }
+        guard connectionMonitor.isConnected else {
+            publishOfflineUnavailableMessage()
+            return false
+        }
+
+        return true
+    }
+
+    /// Publishes the standard offline-unavailable feedback used when a preview has not been downloaded.
+    private func publishOfflineUnavailableMessage() {
+        let message = "This song is not available offline"
+        errorMessage = message
+        publishBanner(message)
     }
 
     /// Normalizes a playlist by removing duplicates and ensuring the selected song is included.

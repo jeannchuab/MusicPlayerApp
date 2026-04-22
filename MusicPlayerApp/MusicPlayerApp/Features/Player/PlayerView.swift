@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 /// Presents the now-playing experience for a selected song, including playback
@@ -20,6 +21,12 @@ struct PlayerView: View {
 
     /// The track URL currently being shared from the player options sheet.
     @State private var shareURL: URL?
+
+    /// The current banner message shown above the player content.
+    @State private var bannerMessage: String?
+
+    /// The dismissal task for the currently visible banner.
+    @State private var bannerDismissTask: Task<Void, Never>?
 
     /// Repository used to load album details from the player flow.
     private let songRepository: any SongRepository
@@ -106,6 +113,8 @@ struct PlayerView: View {
             .padding(.horizontal, 24)
 
             moreOptionsOverlay
+
+            bannerOverlay
         }
         .navigationTitle(viewModel.song.albumTitle ?? "Now Playing")
         .accessibilityIdentifier("player.screen")
@@ -129,6 +138,10 @@ struct PlayerView: View {
             onSongPlayed(viewModel.song)
             await viewModel.startPlaybackProgressUpdates()
         }
+        .onReceive(viewModel.$bannerMessage.compactMap { $0 }) { message in
+            showBanner(message)
+            viewModel.clearBannerMessage()
+        }
         .onDisappear {
             viewModel.pause()
         }
@@ -146,6 +159,10 @@ struct PlayerView: View {
                 SystemShareSheet(items: [shareURL])
             }
         }
+        .onDisappear {
+            bannerDismissTask?.cancel()
+            bannerDismissTask = nil
+        }
     }
 
     // MARK: - Overlay
@@ -159,6 +176,28 @@ struct PlayerView: View {
                 options: playerOptions
             )
             .accessibilityIdentifier("player.moreOptionsPanel")
+        }
+    }
+
+    /// Presents a dismissible status banner above the player content.
+    @ViewBuilder
+    private var bannerOverlay: some View {
+        if let bannerMessage {
+            ZStack(alignment: .top) {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        dismissBanner()
+                    }
+
+                BannerView(message: bannerMessage)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
+                    .accessibilityIdentifier("player.previewBanner")
+            }
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .zIndex(2)
         }
     }
 
@@ -313,9 +352,11 @@ struct PlayerView: View {
             .accessibilityAddTraits(.isButton)
             
             Button {
-                viewModel.togglePlayPause()
-                if viewModel.isPlaying {
-                    onSongPlayed(viewModel.song)
+                Task {
+                    await viewModel.togglePlayPause()
+                    if viewModel.isPlaying {
+                        onSongPlayed(viewModel.song)
+                    }
                 }
             } label: {
                 PlayPauseButton(isPlaying: viewModel.isPlaying)
@@ -355,6 +396,33 @@ struct PlayerView: View {
     /// Toggles the visibility of the custom more-options sheet.
     private func toggleMoreOptions() {
         showsMoreOptions.toggle()
+    }
+
+    /// Shows a banner for two seconds unless it is dismissed earlier.
+    ///
+    /// - Parameter message: The message rendered inside the banner.
+    private func showBanner(_ message: String) {
+        bannerDismissTask?.cancel()
+
+        withAnimation(.easeOut(duration: 0.75)) {
+            bannerMessage = message
+        }
+
+        bannerDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
+            dismissBanner()
+        }
+    }
+
+    /// Dismisses the currently visible banner.
+    private func dismissBanner() {
+        bannerDismissTask?.cancel()
+        bannerDismissTask = nil
+
+        withAnimation(.easeOut(duration: 0.75)) {
+            bannerMessage = nil
+        }
     }
 
     /// A binding that drives the native share sheet from the player screen.
