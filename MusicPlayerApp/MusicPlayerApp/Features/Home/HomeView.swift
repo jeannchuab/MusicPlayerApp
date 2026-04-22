@@ -121,7 +121,7 @@ struct HomeView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 16, height: 16)
-                    .foregroundStyle(Color.white.opacity(0.35))
+                    .foregroundStyle(AppTheme.tertiaryText)
                     .accessibilityHidden(true)
 
                 TextField("Search", text: $viewModel.searchText)
@@ -141,7 +141,7 @@ struct HomeView: View {
             }
             .padding(.horizontal, 13)
             .frame(height: 44)
-            .background(Color(red: 0.09, green: 0.09, blue: 0.09))
+            .background(AppTheme.surfaceElevated)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .accessibilityIdentifier("home.searchField")
             .accessibilityElement(children: .contain)

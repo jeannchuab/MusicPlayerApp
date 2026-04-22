@@ -14,6 +14,9 @@ struct CustomSheetView<Content: View>: View {
     /// Keeps content mounted long enough for the dismiss animation to complete cleanly.
     @State private var shouldRenderContent = false
 
+    /// Tracks whether the sheet should be visually presented while mounted.
+    @State private var isSheetVisible = false
+
     /// The target content height excluding any bottom safe-area inset.
     private let contentHeight: CGFloat
 
@@ -45,7 +48,7 @@ struct CustomSheetView<Content: View>: View {
         contentHeight: CGFloat,
         cornerRadius: CGFloat = 16,
         backdropOpacity: Double = 0.18,
-        backgroundColor: Color = Color(red: 0.15, green: 0.15, blue: 0.15).opacity(0.96),
+        backgroundColor: Color = AppTheme.modalBackground,
         @ViewBuilder content: () -> Content
     ) {
         _isPresented = isPresented
@@ -64,16 +67,16 @@ struct CustomSheetView<Content: View>: View {
             let bottomInset = proxy.safeAreaInsets.bottom
             let sheetHeight = contentHeight + bottomInset
             let hiddenOffset = Self.hiddenOffset(for: sheetHeight)
-            let visibleOffset = isPresented ? dragOffset : hiddenOffset
+            let visibleOffset = isSheetVisible ? dragOffset : hiddenOffset
 
             ZStack(alignment: .bottom) {
                 Color.black.opacity(backdropOpacity)
-                    .opacity(isPresented ? 1 : 0)
+                    .opacity(isSheetVisible ? 1 : 0)
                     .ignoresSafeArea()
                     .onTapGesture {
                         dismiss()
                     }
-                    .allowsHitTesting(isPresented)
+                    .allowsHitTesting(isSheetVisible)
 
                 if shouldRenderContent {
                     content
@@ -92,21 +95,31 @@ struct CustomSheetView<Content: View>: View {
                         )
                         .offset(y: visibleOffset)
                         .simultaneousGesture(dismissGesture)
-                        .allowsHitTesting(isPresented)
+                        .allowsHitTesting(isSheetVisible)
                 }
             }
             .ignoresSafeArea(edges: .bottom)
         }
-        .allowsHitTesting(isPresented)
-        .animation(sheetAnimation, value: isPresented)
+        .allowsHitTesting(isSheetVisible)
+        .animation(sheetAnimation, value: isSheetVisible)
         .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: dragOffset)
         .task {
             shouldRenderContent = isPresented
+            isSheetVisible = isPresented
         }
         .onChange(of: isPresented) { _, newValue in
             if newValue {
                 shouldRenderContent = true
+                dragOffset = 0
+
+                Task { @MainActor in
+                    await Task.yield()
+                    guard isPresented else { return }
+                    isSheetVisible = true
+                }
             } else {
+                isSheetVisible = false
+
                 Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 450_000_000)
                     guard !isPresented else { return }
@@ -142,6 +155,7 @@ struct CustomSheetView<Content: View>: View {
     private func dismiss() {
         withAnimation(sheetAnimation) {
             isPresented = false
+            isSheetVisible = false
             dragOffset = 0
         }
     }

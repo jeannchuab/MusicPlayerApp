@@ -219,11 +219,11 @@ struct PlayerView: View {
 
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color(red: 0.22, green: 0.22, blue: 0.22))
+                        .fill(AppTheme.surfaceMuted)
                         .frame(height: 8)
 
                     Capsule()
-                        .fill(Color(red: 0.72, green: 0.72, blue: 0.72))
+                        .fill(AppTheme.surfaceBright)
                         .frame(width: thumbOffset + thumbSize / 2, height: 8)
 
                     Circle()
