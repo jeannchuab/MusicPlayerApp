@@ -5,6 +5,11 @@ struct CustomSheetView<Content: View>: View {
 
     // MARK: - Properties
 
+    //TODO: Opening the sheet is not smooth/animated
+    //TODO: Test on iOS 18.6
+    //TODO: Update 
+    //TODO: Issue when tap back on Album view
+    
     /// Binding that controls whether the sheet is visible.
     @Binding private var isPresented: Bool
 

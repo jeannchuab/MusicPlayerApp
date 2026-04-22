@@ -21,6 +21,7 @@ struct RootView: View {
                 makeAudioPlaybackService: dependencies.makeAudioPlaybackService
             )
             .accessibilityIdentifier("root.home")
+            .accessibilityLabel("Home")
             .opacity(shouldShowSplash ? 0 : 1)
 
             if shouldShowSplash {

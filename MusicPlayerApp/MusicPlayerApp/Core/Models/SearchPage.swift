@@ -5,8 +5,6 @@ import Foundation
 /// `SearchPage` captures both the results and the pagination metadata needed to determine
 /// whether additional pages are available.
 struct SearchPage: Equatable, Sendable {
-
-    //TODO: Add a cancel option on search?
     
     /// The search term that produced these results.
     let query: String

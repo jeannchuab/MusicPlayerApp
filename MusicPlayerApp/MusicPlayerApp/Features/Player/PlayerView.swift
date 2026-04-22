@@ -109,6 +109,7 @@ struct PlayerView: View {
                 }
                 .foregroundStyle(AppTheme.primaryText)
                 .accessibilityLabel("More options")
+                .accessibilityHint("Shows actions for the current song")
             }
         }
         .task {
@@ -197,9 +198,13 @@ struct PlayerView: View {
                         .opacity(viewModel.isRepeating ? 1.0 : 0.4)
                 }
                 .accessibilityLabel(viewModel.isRepeating ? "Disable repeat" : "Enable repeat")
+                .accessibilityHint("Repeats the current song when it finishes")
+                .accessibilityValue(viewModel.isRepeating ? "On" : "Off")
                 .accessibilityIdentifier("player.repeatButton")
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(viewModel.song.title) by \(viewModel.song.artistName)")
     }
 
     /// The playback scrubber and elapsed and total time labels.
@@ -238,6 +243,7 @@ struct PlayerView: View {
                 )
                 .accessibilityElement()
                 .accessibilityLabel("Playback position")
+                .accessibilityHint("Drag to seek to a different position in the song")
                 .accessibilityValue("\(viewModel.currentTimeText) of \(viewModel.durationText)")
             }
             .frame(height: 28)
@@ -268,6 +274,7 @@ struct PlayerView: View {
                 Image("ic-previous-bar-fill")
             }
             .accessibilityLabel("Previous track")
+            .accessibilityHint("Plays the previous song in the current playlist")
             
             Button {
                 viewModel.togglePlayPause()
@@ -278,6 +285,8 @@ struct PlayerView: View {
                 PlayPauseButton(isPlaying: viewModel.isPlaying)
             }
             .accessibilityLabel(viewModel.isPlaying ? "Pause" : "Play")
+            .accessibilityHint(viewModel.isPlaying ? "Pauses the current song" : "Starts the current song")
+            .accessibilityValue(viewModel.isPlaying ? "Playing" : "Paused")
             
             Button {
                 Task {
@@ -291,6 +300,7 @@ struct PlayerView: View {
                 Image("ic-forward-bar-fill")
             }
             .accessibilityLabel("Next track")
+            .accessibilityHint("Plays the next song in the current playlist")
         }
         .font(.title)
         .foregroundStyle(AppTheme.primaryText)
@@ -327,6 +337,7 @@ struct PlayerView: View {
             SongOptionsSheet.Option(
                 id: "view-album",
                 title: "View album",
+                accessibilityIdentifier: "player.songOptions.viewAlbum",
                 icon: .asset("ic-setlist"),
                 isEnabled: viewModel.song.albumId != nil
             ) {
@@ -338,6 +349,7 @@ struct PlayerView: View {
             SongOptionsSheet.Option(
                 id: "share-song",
                 title: "Share this song",
+                accessibilityIdentifier: "player.songOptions.shareSong",
                 icon: .system("square.and.arrow.up"),
                 isEnabled: viewModel.song.trackViewURL != nil
             ) {

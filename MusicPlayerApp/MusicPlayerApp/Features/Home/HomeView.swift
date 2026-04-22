@@ -131,12 +131,16 @@ struct HomeView: View {
                     .onSubmit {
                         Task { await viewModel.search() }
                     }
+                    .accessibilityLabel("Search songs")
+                    .accessibilityHint("Search by artist, album, or track")
+                    .accessibilityValue(viewModel.searchText.isEmpty ? "Empty" : viewModel.searchText)
             }
             .padding(.horizontal, 13)
             .frame(height: 44)
             .background(Color(red: 0.09, green: 0.09, blue: 0.09))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .accessibilityIdentifier("home.searchField")
+            .accessibilityElement(children: .contain)
         }
         .padding(.horizontal, 22)
         .padding(.top, 18)
@@ -213,6 +217,8 @@ struct HomeView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .accessibilityIdentifier("home.songList")
+        .accessibilityLabel("Song results")
+        .accessibilityValue("\(songs.count) songs")
         .refreshable {
             await viewModel.refresh()
         }
@@ -263,6 +269,7 @@ struct HomeView: View {
             SongOptionsSheet.Option(
                 id: "view-album",
                 title: "View album",
+                accessibilityIdentifier: "home.songOptions.viewAlbum",
                 icon: .asset("ic-setlist"),
                 isEnabled: song.albumId != nil
             ) {
@@ -273,6 +280,7 @@ struct HomeView: View {
             SongOptionsSheet.Option(
                 id: "share-song",
                 title: "Share this song",
+                accessibilityIdentifier: "home.songOptions.shareSong",
                 icon: .system("square.and.arrow.up"),
                 isEnabled: song.trackViewURL != nil
             ) {

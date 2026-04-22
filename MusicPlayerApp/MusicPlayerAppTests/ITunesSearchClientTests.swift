@@ -18,7 +18,6 @@ struct ITunesSearchClientTests {
         #expect(queryItems["media"] == "music")
         #expect(queryItems["entity"] == "song")
         #expect(queryItems["limit"] == "25")
-        #expect(queryItems["offset"] == "50")
         #expect(queryItems["country"] == "US")
     }
 

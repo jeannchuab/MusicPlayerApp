@@ -149,6 +149,9 @@ struct AlbumView: View {
                             .font(.app(15, relativeTo: .subheadline))
                             .foregroundStyle(AppTheme.secondaryText)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(album.title) by \(album.artistName)")
+                    .accessibilityValue("\(album.songs.count) songs")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
@@ -175,6 +178,9 @@ struct AlbumView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .accessibilityIdentifier("album.songList")
+        .accessibilityLabel("Album songs")
+        .accessibilityValue("\(album.songs.count) songs")
         .refreshable {
             await viewModel.refresh()
         }
@@ -233,6 +239,7 @@ struct AlbumView: View {
             SongOptionsSheet.Option(
                 id: "share-song",
                 title: "Share this song",
+                accessibilityIdentifier: "album.songOptions.shareSong",
                 icon: .system("square.and.arrow.up"),
                 isEnabled: song.trackViewURL != nil
             ) {

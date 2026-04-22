@@ -27,6 +27,9 @@ struct SongOptionsSheet: View {
         /// The user-facing title shown in the sheet.
         let title: String
 
+        /// A stable accessibility identifier for the option button.
+        let accessibilityIdentifier: String
+
         /// The icon rendered alongside the title.
         let icon: Icon
 
@@ -43,18 +46,21 @@ struct SongOptionsSheet: View {
         /// - Parameters:
         ///   - id: The stable identifier for the option row.
         ///   - title: The user-facing title shown in the sheet.
+        ///   - accessibilityIdentifier: A stable accessibility identifier for the option button.
         ///   - icon: The icon rendered alongside the title.
         ///   - isEnabled: Indicates whether the option should be tappable.
         ///   - action: The action triggered when the option is tapped.
         init(
             id: String,
             title: String,
+            accessibilityIdentifier: String,
             icon: Icon,
             isEnabled: Bool = true,
             action: @escaping () -> Void
         ) {
             self.id = id
             self.title = title
+            self.accessibilityIdentifier = accessibilityIdentifier
             self.icon = icon
             self.isEnabled = isEnabled
             self.action = action
@@ -93,6 +99,7 @@ struct SongOptionsSheet: View {
                 .fill(Color.white.opacity(0.35))
                 .frame(width: 56, height: 5)
                 .padding(.top, 8)
+                .accessibilityHidden(true)
 
             VStack(alignment: .center) {
                 Text(song.title)
@@ -107,6 +114,8 @@ struct SongOptionsSheet: View {
                     .frame(height: 26, alignment: .center)
                     .lineLimit(2)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(song.title) by \(song.artistName)")
 
             ForEach(options) { option in
                 Button(action: option.action) {
@@ -115,11 +124,17 @@ struct SongOptionsSheet: View {
                 .buttonStyle(.plain)
                 .disabled(!option.isEnabled)
                 .opacity(option.isEnabled ? 1 : 0.45)
+                .accessibilityIdentifier(option.accessibilityIdentifier)
+                .accessibilityLabel(option.title)
+                .accessibilityHint(option.isEnabled ? "Activates this song option" : "Unavailable for this song")
+                .accessibilityValue(option.isEnabled ? "Available" : "Unavailable")
             }
 
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 24)
+        .accessibilityIdentifier("song.optionsSheet")
+        .accessibilityLabel("Song options")
     }
 
     // MARK: - Helpers

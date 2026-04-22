@@ -36,10 +36,6 @@ struct SplashView: View {
             isBeating = true
         }
         .accessibilityIdentifier("splash.view")
+        .accessibilityLabel("Splash screen")
     }
-}
-
-/// Preview configuration for the splash screen.
-#Preview {
-    SplashView()
 }

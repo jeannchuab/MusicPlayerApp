@@ -34,8 +34,13 @@ struct ErrorStateView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(AppTheme.accent)
                 .controlSize(.large)
+                .accessibilityIdentifier("error.retryButton")
+                .accessibilityLabel("Try again")
+                .accessibilityHint("Attempts to load the content again")
         }
         .frame(maxWidth: .infinity)
         .accessibilityIdentifier("error.state")
+        .accessibilityLabel("Error")
+        .accessibilityValue(message)
     }
 }
