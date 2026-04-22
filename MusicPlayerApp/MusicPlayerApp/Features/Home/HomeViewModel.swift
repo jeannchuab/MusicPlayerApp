@@ -74,12 +74,16 @@ final class HomeViewModel: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// Loads recently played songs as the initial content if the state is still idle.
+    /// Loads the initial Home state if the screen has not been initialized yet.
     ///
-    /// Call this when the view first appears to populate the screen without triggering a network search.
+    /// Call this when the view first appears to preload recently played metadata
+    /// without placing those songs into the main search results list.
     func loadInitialIfNeeded() async {
         guard case .idle = state else { return }
-        loadRecentlyPlayedAsInitialResults()
+        loadRecentlyPlayed()
+        allSearchResults = []
+        currentSongs = []
+        state = .loaded([])
     }
 
     /// Executes a search against the repository using the current ``searchText``.

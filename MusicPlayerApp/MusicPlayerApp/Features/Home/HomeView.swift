@@ -173,7 +173,13 @@ struct HomeView: View {
                 .foregroundStyle(AppTheme.primaryText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .loaded(let songs):
-            songList(songs)
+            VStack(spacing: 0) {
+                songList(songs)
+
+                if !viewModel.recentlyPlayed.isEmpty {
+                    recentlyPlayedCarousel
+                }
+            }
         case .empty:
             ContentUnavailableView(
                 "No songs found",
@@ -230,12 +236,41 @@ struct HomeView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("home.songList")
         .accessibilityLabel("Song results")
         .accessibilityValue("\(songs.count) songs")
         .refreshable {
             await viewModel.refresh()
         }
+    }
+
+    /// Presents the recently played songs below the current search results.
+    private var recentlyPlayedCarousel: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Recently Played")
+                .font(.app(17, weight: .semibold600))
+                .foregroundStyle(AppTheme.primaryText)
+                .padding(.horizontal, 22)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(viewModel.recentlyPlayed) { song in
+                        RecentlyPlayedSongView(song: song) {
+                            isSearchFocused = false
+                            viewModel.select(song)
+                        }
+                    }
+                }
+                .padding(.horizontal, 22)
+            }
+            .accessibilityIdentifier("home.recentlyPlayedCarousel")
+            .accessibilityLabel("Recently played songs")
+            .accessibilityValue("\(viewModel.recentlyPlayed.count) songs")
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 20)
+        .background(AppTheme.background)
     }
 
     // MARK: - Helpers
