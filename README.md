@@ -55,6 +55,21 @@ Protocol-based abstractions keep feature code isolated from implementation detai
 
 The production repository uses live iTunes services plus a SwiftData-backed cache fallback.
 
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+    A["SwiftUI Views"] --> B["ViewModels"]
+    B --> C["SongRepository"]
+    C --> D["iTunes Search Client"]
+    C --> E["SwiftData Cache Store"]
+    B --> F["AudioPlaybackService"]
+    B --> G["Preview Cache Manager"]
+    B --> H["Artwork Loader"]
+    G --> I["Disk Cache"]
+    H --> I
+```
+
 ## Swift Concurrency
 
 Swift Concurrency is used throughout the app:
@@ -92,26 +107,44 @@ UI tests support deterministic launch behavior through launch arguments:
 - Search, album data, and recently played songs are cached to improve resilience and support fallback behavior.
 - The Home, Player, and Album flows share a reusable song options sheet component.
 
+## Technical Decisions
+
+- **Client-side pagination:** the iTunes Search API documents `limit`, but not a supported `offset` parameter for `/search`. To keep the user experience responsive and predictable, the app fetches a larger batch once and paginates locally.
+- **Disk cache for artwork and previews:** binary assets are cached on disk instead of SwiftData. SwiftData is used for structured metadata, while files on disk are a better fit for larger remote assets and offline reuse.
+- **Manual offline preview download:** preview files are only stored when the user explicitly chooses to save them. This keeps bandwidth and storage usage intentional while still enabling offline playback.
+- **Offline-first home experience:** recently played songs, cached albums, cached search pages, artwork, and downloaded previews are all available without depending on a fresh network request.
+- **Replaceable network layer:** feature code depends on protocols and repositories instead of concrete API clients, so the iTunes implementation can be swapped without changing the view models or screens.
+
 ## Screenshots
 
 ### Home
 
-<img width="482" height="1049" alt="HomeView(1)" src="https://github.com/user-attachments/assets/ab6c2b36-4aa4-436d-8b6e-08dd59a40a72" />
-<img width="482" height="1049" alt="HomeView(2)" src="https://github.com/user-attachments/assets/8a2e46b1-fbd0-41c3-b401-3f8de1d852d9" />
+<p align="center">
+  <img width="240" alt="HomeView(1)" src="https://github.com/user-attachments/assets/ab6c2b36-4aa4-436d-8b6e-08dd59a40a72" />
+  <img width="240" alt="HomeView(2)" src="https://github.com/user-attachments/assets/8a2e46b1-fbd0-41c3-b401-3f8de1d852d9" />
+</p>
 
 ### Player
 
-<img width="482" height="1049" alt="Player(1)" src="https://github.com/user-attachments/assets/82934330-ead1-4041-931f-e29d1de30db5" />
-<img width="482" height="1049" alt="Player(2)" src="https://github.com/user-attachments/assets/b8c89c4e-4dd7-473a-910a-8d658727f4c1" />
-<img width="482" height="1049" alt="Player(3)" src="https://github.com/user-attachments/assets/9419ab71-f4a4-4dac-a884-3f03aff97709" />
-<img width="482" height="1049" alt="Player(4)" src="https://github.com/user-attachments/assets/09d0c23f-254b-420f-ab0b-ae903e8fec8e" />
-<img width="482" height="1049" alt="Player(5)" src="https://github.com/user-attachments/assets/dada5d08-4367-4781-9dd9-6022fe2d4ad8" />
+<p align="center">
+  <img width="220" alt="Player(1)" src="https://github.com/user-attachments/assets/82934330-ead1-4041-931f-e29d1de30db5" />
+  <img width="220" alt="Player(2)" src="https://github.com/user-attachments/assets/b8c89c4e-4dd7-473a-910a-8d658727f4c1" />
+  <img width="220" alt="Player(3)" src="https://github.com/user-attachments/assets/9419ab71-f4a4-4dac-a884-3f03aff97709" />
+</p>
+
+<p align="center">
+  <img width="220" alt="Player(4)" src="https://github.com/user-attachments/assets/09d0c23f-254b-420f-ab0b-ae903e8fec8e" />
+  <img width="220" alt="Player(5)" src="https://github.com/user-attachments/assets/dada5d08-4367-4781-9dd9-6022fe2d4ad8" />
+</p>
 
 ### Album
 
-<img width="482" height="1049" alt="Album(1)" src="https://github.com/user-attachments/assets/06d9ea67-b45f-4623-98cd-b4a66e1b6207" />
+<p align="center">
+  <img width="240" alt="Album(1)" src="https://github.com/user-attachments/assets/06d9ea67-b45f-4623-98cd-b4a66e1b6207" />
+</p>
 
 ### Splash
 
-<img width="482" height="1049" alt="Splash(1)" src="https://github.com/user-attachments/assets/58a64473-c6ba-4e3c-a0c0-59c391cbd48c" />
-
+<p align="center">
+  <img width="240" alt="Splash(1)" src="https://github.com/user-attachments/assets/58a64473-c6ba-4e3c-a0c0-59c391cbd48c" />
+</p>
