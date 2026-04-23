@@ -1,18 +1,18 @@
 # MusicPlayerApp
 
-MusicPlayerApp is a SwiftUI music browsing and preview experience built for the Music AI iPhone code challenge. The application integrates with the iTunes Search API, supports preview playback, persists cached data locally, and follows a feature-first MVVM structure with protocol-based boundaries and Swift Concurrency.
+MusicPlayerApp is a SwiftUI music browsing and preview experience built for the Music AI / Moises iPhone code challenge. The application integrates with the iTunes Search API, supports preview playback, persists cached data locally, and follows a feature-first MVVM structure with protocol-based boundaries and Swift Concurrency.
 
 ## References
 
 - Requirement: [Music AI iPhone Challenge](https://moisesai.notion.site/iPhone-31f143d913108013a685dd9af4f657cb)
 - Figma design: [Code Challenge](https://www.figma.com/design/uuhUN9OZYqNZkBxuDq9FWh/Code-Challenge?node-id=10985-10110&t=etEwvDfga5a2EMBw-4)
-- API reference: [iTunes Search API](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/UnderstandingSearchResults.html#//apple_ref/doc/uid/TP40017632-CH8-SW1)
+- iTunes API reference: [iTunes Search API](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/UnderstandingSearchResults.html#//apple_ref/doc/uid/TP40017632-CH8-SW1)
 
 ## Platform
 
 - Swift 6
 - SwiftUI
-- Minimum iOS version: `iOS 17.4`
+- Minimum iOS version: `iOS 26.0`
 - Device support in this submission: `iPhone only`
 
 This implementation is intentionally optimized for the iPhone experience defined in the provided Figma. A dedicated iPad layout is not included in the current scope.
@@ -68,7 +68,7 @@ Swift Concurrency is used throughout the app:
 
 1. Open [MusicPlayerApp.xcodeproj](/Users/jeannchuab/Projects/jeannchuab/MusicPlayerApp/MusicPlayerApp/MusicPlayerApp.xcodeproj)
 2. Select the `MusicPlayerApp` scheme
-3. Choose an iPhone simulator running iOS 17.4 or newer
+3. Choose an iPhone simulator running iOS 26.0 or newer
 4. Build and run
 
 ## Running Tests
@@ -94,23 +94,24 @@ UI tests support deterministic launch behavior through launch arguments:
 
 ## Screenshots
 
-Add screenshots and recordings here.
-
 ### Home
 
-- `[Add image here]`
-- `[Add video here]`
+<img width="482" height="1049" alt="HomeView(1)" src="https://github.com/user-attachments/assets/ab6c2b36-4aa4-436d-8b6e-08dd59a40a72" />
+<img width="482" height="1049" alt="HomeView(2)" src="https://github.com/user-attachments/assets/8a2e46b1-fbd0-41c3-b401-3f8de1d852d9" />
 
 ### Player
 
-- `[Add image here]`
-- `[Add video here]`
+<img width="482" height="1049" alt="Player(1)" src="https://github.com/user-attachments/assets/82934330-ead1-4041-931f-e29d1de30db5" />
+<img width="482" height="1049" alt="Player(2)" src="https://github.com/user-attachments/assets/b8c89c4e-4dd7-473a-910a-8d658727f4c1" />
+<img width="482" height="1049" alt="Player(3)" src="https://github.com/user-attachments/assets/9419ab71-f4a4-4dac-a884-3f03aff97709" />
+<img width="482" height="1049" alt="Player(4)" src="https://github.com/user-attachments/assets/09d0c23f-254b-420f-ab0b-ae903e8fec8e" />
+<img width="482" height="1049" alt="Player(5)" src="https://github.com/user-attachments/assets/dada5d08-4367-4781-9dd9-6022fe2d4ad8" />
 
 ### Album
 
-- `[Add image here]`
-- `[Add video here]`
+<img width="482" height="1049" alt="Album(1)" src="https://github.com/user-attachments/assets/06d9ea67-b45f-4623-98cd-b4a66e1b6207" />
 
 ### Splash
 
-- `[Add image here]`
+<img width="482" height="1049" alt="Splash(1)" src="https://github.com/user-attachments/assets/58a64473-c6ba-4e3c-a0c0-59c391cbd48c" />
+
