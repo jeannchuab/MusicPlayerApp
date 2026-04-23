@@ -67,11 +67,15 @@ struct HomeView: View {
 
                 VStack(spacing: 0) {
                     header
-
                     content
                 }
 
                 rowOptionsOverlay
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !viewModel.recentlyPlayed.isEmpty {
+                    recentlyPlayedCarousel
+                }
             }
             .toolbar(.hidden, for: .navigationBar)
             .accessibilityIdentifier("home.screen")
@@ -173,13 +177,7 @@ struct HomeView: View {
                 .foregroundStyle(AppTheme.primaryText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .loaded(let songs):
-            VStack(spacing: 0) {
-                songList(songs)
-
-                if !viewModel.recentlyPlayed.isEmpty {
-                    recentlyPlayedCarousel
-                }
-            }
+            songList(songs)
         case .empty:
             ContentUnavailableView(
                 "No songs found",
@@ -203,6 +201,27 @@ struct HomeView: View {
     /// - Returns: A `List` view containing tappable song rows and an optional loading indicator at the bottom.
     private func songList(_ songs: [Song]) -> some View {
         List {
+            if viewModel.isRefreshing {
+                HStack(spacing: 8) {
+                    Spacer()
+
+                    ProgressView()
+                        .tint(AppTheme.accent)
+
+                    Text("Refreshing songs")
+                        .font(.app(13, relativeTo: .footnote))
+                        .foregroundStyle(AppTheme.secondaryText)
+
+                    Spacer()
+                }
+                .padding(.top, 4)
+                .padding(.bottom, 6)
+                .listRowBackground(AppTheme.background)
+                .listRowSeparator(.hidden)
+                .accessibilityIdentifier("home.refreshIndicator")
+                .accessibilityLabel("Refreshing songs")
+            }
+
             ForEach(songs) { song in
                 SongRowView(
                     song: song,
@@ -245,7 +264,7 @@ struct HomeView: View {
         }
     }
 
-    /// Presents the recently played songs below the current search results.
+    /// Presents the recently played songs in a fixed bottom carousel above the safe area.
     private var recentlyPlayedCarousel: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Recently Played")

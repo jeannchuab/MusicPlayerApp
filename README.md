@@ -28,12 +28,23 @@ This implementation is intentionally optimized for the iPhone experience defined
 
 ## Extra Points Implemented
 
+- Error and state handling
+  - loading, empty, and failure states across the main flows
+  - offline feedback for unavailable previews
+- Swipe to refresh on the Home screen
+- Repository organization with protocol-based boundaries and a cache-backed implementation
+- Player improvements
+  - forward and backward track actions
+  - repeat current song
+  - drag-to-seek playback position
+  - visible playback timeline
 - Share option
-- Repeat song option
-- Forward and backward track actions
-- Drag-to-seek playback position
+  - available from song options on Home, Album, and Player
 - Accessibility support
-- Empty state screens
+  - identifiers, labels, hints, and values across the main feature flows
+- Offline-first enhancements
+  - artwork disk cache
+  - manually downloaded preview cache for offline playback
 
 ## Architecture
 

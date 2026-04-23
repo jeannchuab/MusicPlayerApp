@@ -27,6 +27,9 @@ final class HomeViewModel: ObservableObject {
     /// Indicates whether the next page of local results is currently being appended.
     @Published private(set) var isLoadingNextPage = false
 
+    /// Indicates whether a pull-to-refresh operation is currently running.
+    @Published private(set) var isRefreshing = false
+
     /// The song the user has tapped on, presented in the preview sheet. `nil` when no song is selected.
     @Published private(set) var selectedSong: Song?
 
@@ -118,6 +121,11 @@ final class HomeViewModel: ObservableObject {
     /// If no search query is active, reloads recently played songs.
     /// Otherwise, refreshes the recently played list and re-executes the current search.
     func refresh() async {
+        guard !isRefreshing else { return }
+
+        isRefreshing = true
+        defer { isRefreshing = false }
+
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             loadRecentlyPlayedAsInitialResults()
         } else {
