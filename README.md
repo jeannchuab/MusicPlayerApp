@@ -1,6 +1,6 @@
 # MusicPlayerApp
 
-MusicPlayerApp is a SwiftUI music browsing and preview experience built for the Music AI / Moises iPhone code challenge. The application integrates with the iTunes Search API, supports preview playback, persists cached data locally, and follows a feature-first MVVM structure with protocol-based boundaries and Swift Concurrency.
+MusicPlayerApp is an iOS Mobile App for music browsing and preview experience. The application integrates with the iTunes Search API, supports preview playback, persists cached data locally, and follows a feature-first MVVM structure with protocol-based boundaries and Swift Concurrency.
 
 ## References
 
